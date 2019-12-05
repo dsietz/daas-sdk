@@ -1,0 +1,27 @@
+[package]
+name = "daas"
+version = "0.0.1"
+authors = ["dsietz <davidsietz@yahoo.com>"]
+edition = "2018"
+readme = "README.md"
+license = "Apache-2.0"
+keywords = ["data", "daas", "sdk", "design", "development"]
+categories = ["web-programming", "development-tools", "data-structures","config"]
+description = "A software development kit for Data as a Service (DaaS)."
+documentation = "https://docs.rs/daas"
+repository = "https://github.com/dsietz/daas-sdk"
+exclude = [
+    "examples/*",
+    "target/*",
+	"tests/*",
+	"benches/*",
+]
+
+[lib]
+name = "sdk"
+path = "src/lib.rs"
+
+[badges]
+maintenance = {status = "actively-developed"}
+
+[dependencies]
