@@ -1,20 +1,8 @@
-//! 
-//! Data as a Service (DaaS) is a forward thinking pattern in the industry of data management. 
-//! Adopting the best practices of Eventing, Microservices, NoSQL, and Brokering, the DaaS pattern 
-//! is quickly becoming the `go-forward` architecture for data architects and engineers. For this reason, 
-//! this library provides functionality and components that help you implement DaaS best practices.
-//!
-//!
-//! #### Usage
-//!
-//!
-//!
 
+extern crate log;
+extern crate env_logger;
 
+use log::*;
+use std::env;
 
-// Modules
-
-// Unit Tests
-#[cfg(test)]
-mod tests {
-}
+pub mod config;
