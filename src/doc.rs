@@ -50,11 +50,6 @@ use pbd::dua::DUA;
 // Repesentation of a map for storing metadata about the data object
 type Metadata = BTreeMap<String, String>;
 
-/// Traits
-pub trait UpsertDaaSDoc {
-    fn upsert_daasdoc(self, mut daas_doc: DaaSDoc) -> Result< DaaSDoc, DaaSError>; 
-} 
-
 /// Defining a DaaS Error
 /// see https://doc.rust-lang.org/src/std/io/error.rs.html#229-512 for further details
 #[derive(Debug, Clone)]
@@ -569,26 +564,7 @@ mod tests {
                 });
         v
     }
-
-    #[test]
-    fn test_dua_from_serialized() {
-        let serialized = r#"{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}"#;
-        let dua = DUA::from_serialized(serialized);
-
-        assert_eq!(dua.agreement_name, "billing".to_string());
-        assert_eq!(dua.location, "www.dua.org/billing.pdf".to_string());
-        assert_eq!(dua.agreed_dtm, 1553988607);
-    }
-
-    #[test]
-    fn test_dua_serialize() {
-        let serialized = r#"{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}"#;
-        let dua = &mut get_dua()[0];
-
-        assert_eq!(dua.serialize(), serialized);
-    }
-
-    
+   
     #[test]
     fn test_has_tag_ok() {
         let src = "iStore".to_string();
