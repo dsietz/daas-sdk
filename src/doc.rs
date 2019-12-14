@@ -132,7 +132,7 @@ struct DaaSDocNoRev{
 
 impl DaaSDoc {
     /// Delimiter used for building the unique identifier value for the DaaS document
-    pub const DELIMITER: &'static str = "|";
+    pub const DELIMITER: &'static str = "~";
 
     /// Constructor
     /// 
@@ -607,7 +607,7 @@ mod tests {
         let cat = "order".to_string();
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
-        let id = format!("{}|{}|{}|{}",cat, sub, src, uid).to_string();
+        let id = format!("{}~{}~{}~{}",cat, sub, src, uid).to_string();
         let dua = get_dua();
         let data = json!({
             "status": "new"
