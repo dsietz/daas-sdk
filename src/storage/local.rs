@@ -31,12 +31,14 @@ impl LocalStorage {
         }
     }
 
-    fn doc_exists(&self, doc_id: String) -> bool {
-        let p = self.get_doc_path(doc_id).clone();
+    // Determines if the Daas document file exists
+    fn doc_exists(&self, file_uuid: String) -> bool {
+        let p = self.get_doc_path(file_uuid).clone();
         let doc = Path::new(&p);
         doc.is_file()
     }
 
+    // Calculates the path where the DaaS document will be located
     fn get_doc_path(&self, doc_id: String) -> String {
         format!("{}/{}",&self.path, doc_id)
     }
@@ -117,11 +119,6 @@ impl LocalStorage {
     }
 
     // Calculates the next version of the DaaS document
-    // 
-    // # Arguments
-    // 
-    // * revision: Option<String> - The revision of the DaaS document (None = new document, Some = pre-existing document).</br>
-    //
     fn next_rev(revision: Option<String>) -> Result<String, DaaSError> {
         match revision {
             None => Ok("0".to_string()),
@@ -170,6 +167,13 @@ mod tests {
         let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
 
         doc
+    }
+
+    #[test]
+    fn test_doc_exists() {
+        let loc = LocalStorage::new("./tmp".to_string()); 
+        assert!(loc.doc_exists("test_doc_exists.test".to_string()));
+        assert!(!loc.doc_exists("test_doc_exists.tests".to_string()));
     }
 
     #[test]
