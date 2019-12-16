@@ -245,7 +245,25 @@ impl LocalStorage {
         // set ot zero for not existing document
 
         //otherwise find latest revision
-        "3".to_string()
+        let dir_path = self.get_dir_path(doc_id.clone());
+        let base_dir = Path::new(&dir_path);
+
+        match base_dir.is_dir() {
+            true => {
+                debug!("Searching in {} for latest version for {} ...", dir_path.clone(), doc_id);
+                let mut latest_rev = "0".to_string(); 
+
+                for entry in fs::read_dir(dir_path).unwrap() {
+                    let entry = entry.unwrap();
+                    latest_rev = format!("{}", entry.file_name().into_string().unwrap().split(DaaSDoc::DELIMITER).collect::<Vec<&str>>().last().unwrap());
+                }
+
+                latest_rev
+            },
+            false => {
+                "0".to_string()
+            },
+        }
     }
 }
 
