@@ -1,12 +1,23 @@
 use super::*;
-use std::fs::File;
+use std::fs;
+use std::fs::{File};
 use std::io::prelude::*;
 use std::path::Path;
 
 /// A document storage management solution
 pub struct LocalStorage {
-    /// The directory path where to storage the DaaS documents
+    /// The directory path where to storage the DaaS documents (default: "./")
     pub path: String,
+}
+
+
+impl Default for LocalStorage {
+    // provide a LocalStorage object with the default values
+    fn default() -> Self {
+        LocalStorage{
+            path: "./".to_string(),
+        }
+    }
 }
 
 impl LocalStorage {
@@ -28,13 +39,28 @@ impl LocalStorage {
     /// }
     /// ```
     pub fn new(dir_path: String) -> LocalStorage {
-        LocalStorage {
-            path: dir_path,
+        match LocalStorage::ensure_dir_path(dir_path.clone()){
+            Err(e) => {
+                warn!("Could not create directory path {} for local storage of the DaaS documents.", dir_path);
+                warn!("Using default settings ...");
+                LocalStorage::default()
+            },
+            _ => {
+                LocalStorage {
+                    path: dir_path,
+                }
+            },
         }
+    }
+
+    // Ensures that the directory path where the DaaS documents exists - if not create the entire path
+    fn ensure_dir_path(dir_path: String) -> std::io::Result<()> {
+        fs::create_dir_all(dir_path)
     }
 
     // Determines if the Daas document file exists
     fn doc_exists(&self, file_uuid: String) -> bool {
+        debug!("Searching for DaaS document {} ...", file_uuid.clone());
         let p = self.get_doc_path(file_uuid).clone();
         let doc = Path::new(&p);
         doc.is_file()
@@ -173,9 +199,21 @@ mod tests {
 
     #[test]
     fn test_doc_exists() {
-        let loc = LocalStorage::new("./tmp".to_string()); 
+        let loc = LocalStorage::new("./tests".to_string()); 
         assert!(loc.doc_exists("test_doc_exists.test".to_string()));
         assert!(!loc.doc_exists("test_doc_exists.tests".to_string()));
+    }
+
+    #[test]
+    fn test_doc_exists_default() {
+        let _ = env_logger::builder().is_test(true).try_init();
+        let loc = LocalStorage::default(); 
+        assert!(loc.doc_exists("test_doc_exists_default.test".to_string()));
+    }
+
+    #[test]
+    fn test_ensure_dir_path() {
+        assert!(LocalStorage::ensure_dir_path("./tmp".to_string()).is_ok());
     }
 
     #[test]
