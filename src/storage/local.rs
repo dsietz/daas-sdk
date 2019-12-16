@@ -3,7 +3,9 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
+/// A document storage management solution
 pub struct LocalStorage {
+    /// The directory path where to storage the DaaS documents
     pub path: String,
 }
 
