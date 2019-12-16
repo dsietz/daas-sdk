@@ -11,7 +11,6 @@ pub struct LocalStorage {
     pub path: String,
 }
 
-
 impl Default for LocalStorage {
     // provide a LocalStorage object with the default values
     fn default() -> Self {
@@ -218,7 +217,9 @@ impl LocalStorage {
     }
 
     fn make_doc_uuid(doc_id: String, rev: String) -> String {
-        format!("{}{}{}", doc_id, LocalStorage::DELIMITER, rev)
+        let uuid = format!("{}{}{}", doc_id.replace(DaaSDoc::DELIMITER, LocalStorage::DELIMITER), LocalStorage::DELIMITER, rev);
+        println!("{}", uuid.clone());
+        uuid
     }
 
     // Calculates the next version of the DaaS document
@@ -398,7 +399,7 @@ mod tests {
     fn test_upsert_version() {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tmp".to_string());
-        let serialized = r#"{"_id":"order~clothing~iStore~6000","_rev":"3","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":{"status":"new"}}"#;
+        let serialized = r#"{"_id":"order|clothing|iStore|6000","_rev":"3","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":{"status":"new"}}"#;
         let doc = DaaSDoc::from_serialized(&serialized);
         let updated_doc = loc.upsert_daas_doc(doc).unwrap();
 

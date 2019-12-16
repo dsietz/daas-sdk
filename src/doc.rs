@@ -58,21 +58,12 @@ pub struct DaaSError;
 /// Define how a DaaSError will be displayed
 impl fmt::Display for DaaSError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "invalid first item to double")
+        write!(f, "Unable to perform the DaaS operation!")
     }
 }
 
 // This is important for other errors to wrap this one.
-impl error::Error for DaaSError {
-    fn description(&self) -> &str {
-        "Unable to perform the DaaS operation"
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        // Generic error, underlying cause isn't tracked.
-        None
-    }
-}
+impl error::Error for DaaSError {}
 
 /// Represents an existing DaaS document (after it has been saved and assigned a _rev value)
 #[derive(Serialize, Deserialize, Debug, Clone)]
