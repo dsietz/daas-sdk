@@ -32,3 +32,8 @@ pbd = "0.0.7"
 serde ="1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
+
+[dependencies.kafka]
+version = "0.7.0"
+default-features = false
+features = ["snappy","gzip"]

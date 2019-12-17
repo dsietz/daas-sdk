@@ -2,6 +2,9 @@ use super::*;
 use crate::doc::*;
 use crate::storage::DaaSDocStorage;
 use crate::storage::local::{LocalStorage};
+use std::thread;
+// testing
+use std::time::Duration;
 
 pub trait DaaSListener {
     fn process_data(mut doc: DaaSDoc) -> Result<DaaSDoc, DaaSError> {
@@ -13,14 +16,28 @@ pub trait DaaSListener {
         //    4b. if failure, repeat step 4
         //    4c. log activity
 
+        // store a local copy so data isn't lost
         let storage = LocalStorage::new("./tests".to_string());
-        match storage.upsert_daas_doc(doc) {
-            Ok(d) => Ok(d),
+        let doc = match storage.upsert_daas_doc(doc) {
+            Ok(d) => d,
             Err(e) => {
                 error!("{}", e);
-                Err(DaaSError)
+                return Err(DaaSError)
             },
-        }
+        };
+        
+        // start an indepentent thread to broker the document
+        thread::spawn(|| {
+            debug!("Sent document to broker. Waiting for response...");
+            //testing
+            thread::sleep(Duration::from_secs(1));
+            debug!("Broker responded ...")
+
+        });
+
+        // return with a Ok(doc)
+        debug!("Sent back a status 200");
+        Ok(doc)
     }
 }
 
@@ -38,6 +55,13 @@ mod test {
         let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":{"status":"new"}}"#;
         let doc = DaaSDoc::from_serialized(&serialized);
         
-        assert!(MyListener::process_data(doc).is_ok());
+        let handle = thread::spawn(|| {
+            println!("Mock service running ...");
+            assert!(MyListener::process_data(doc).is_ok());
+            thread::sleep(Duration::from_secs(5));
+            println!("Mock service stopped.");
+        });
+
+        handle.join().unwrap();
     }
 }

@@ -224,7 +224,7 @@ impl LocalStorage {
 
     fn make_doc_uuid(doc_id: String, rev: String) -> String {
         let uuid = format!("{}{}{}", doc_id.replace(DaaSDoc::DELIMITER, LocalStorage::DELIMITER), LocalStorage::DELIMITER, rev);
-        println!("Document UUID: {}", uuid.clone());
+        
         uuid
     }
 
