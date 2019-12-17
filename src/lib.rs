@@ -10,6 +10,8 @@ use log::*;
 use std::env;
 use std::time::{SystemTime};
 
+pub const DELIMITER: &'static str = "~";
+
 #[macro_use] pub mod macros;
 pub mod config;
 pub mod doc;

@@ -123,7 +123,7 @@ struct DaaSDocNoRev{
 
 impl DaaSDoc {
     /// Delimiter used for building the unique identifier value for the DaaS document
-    pub const DELIMITER: &'static str = "~";
+    //pub const DELIMITER: &'static str = "~";
 
     /// Constructor
     /// 
@@ -451,7 +451,7 @@ impl DaaSDoc {
     /// * src_uid: usize - The unique identifier that the data source provided.</br>
     ///
     fn make_id(cat: String, subcat: String, src_name: String, src_uid: usize) -> String {
-        format!("{}{}{}{}{}{}{}",cat, DaaSDoc::DELIMITER, subcat, DaaSDoc::DELIMITER, src_name, DaaSDoc::DELIMITER, src_uid).to_string()
+        format!("{}{}{}{}{}{}{}",cat, DELIMITER, subcat, DELIMITER, src_name, DELIMITER, src_uid).to_string()
     } 
 
     /// Serializes the DaaSDoc object

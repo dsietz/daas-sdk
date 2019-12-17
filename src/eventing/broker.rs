@@ -1,4 +1,5 @@
 use super::*;
+use crate::doc::DaaSDoc;
 use std::{thread};
 use std::time::Duration;
 use kafka::client::KafkaClient;
@@ -6,6 +7,10 @@ use kafka::producer::{Producer, Record, RequiredAcks};
 use kafka::error::{ErrorKind, KafkaCode};
 
 pub static KAFKA_BROKERS: &str = "localhost:9092";
+
+pub fn make_topic(doc: DaaSDoc) -> String {
+    format!("{}{}{}{}{}", doc.category, DELIMITER, doc.subcategory, DELIMITER, doc.source_name)
+}
 
 pub fn produce_message<'a, 'b>(data: &'a [u8], topic: &'b str, brokers: Vec<String>) -> Result<(), kafka::error::ErrorKind> {
     let mut client = KafkaClient::new(brokers);
@@ -43,6 +48,38 @@ pub fn produce_message<'a, 'b>(data: &'a [u8], topic: &'b str, brokers: Vec<Stri
 #[cfg(test)]
 mod tests {
     use super::*;
+    
+    use pbd::dua::DUA;
+
+    fn get_dua() -> Vec<DUA>{
+        let mut v = Vec::new();
+        v.push( DUA {
+                    agreement_name: "billing".to_string(),
+                    location: "www.dua.org/billing.pdf".to_string(),
+                    agreed_dtm: 1553988607,
+                });
+        v
+    }
+
+    fn get_daas_doc() -> DaaSDoc {
+        let src = "iStore".to_string();
+        let uid = 6000;
+        let cat = "order".to_string();
+        let sub = "clothing".to_string();
+        let auth = "istore_app".to_string();
+        let dua = get_dua();
+        let data = json!({
+            "status": "new"
+        });
+        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+
+        doc
+    }
+
+    #[test]
+    fn test_make_topic(){
+        assert_eq!(broker::make_topic(get_daas_doc()), "order~clothing~iStore".to_string());
+    }
 
     #[ignore]
     #[test]

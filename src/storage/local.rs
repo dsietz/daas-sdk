@@ -163,7 +163,7 @@ impl DaaSDocStorage for LocalStorage {
 
 impl LocalStorage {
     /// Delimiter used for building the unique identifier value for the DaaS document
-    pub const DELIMITER: &'static str = "~";
+    //pub const DELIMITER: &'static str = "~";
 
     /// Constructor
     /// 
@@ -212,20 +212,18 @@ impl LocalStorage {
 
     // Calculates the full path where the DaaS document will be located
     fn get_doc_path(&self, doc_uuid: String) -> String {
-        let dir: Vec<&str> = doc_uuid.split(DaaSDoc::DELIMITER).collect();
+        let dir: Vec<&str> = doc_uuid.split(DELIMITER).collect();
         format!("{}/{}/{}/{}/{}/{}",&self.path, dir[0], dir[1], dir[2], dir[3], doc_uuid)
     }
 
     // Calculates the base path where the DaaS document will be located
     fn get_dir_path(&self, doc_uuid: String) -> String {
-        let dir: Vec<&str> = doc_uuid.split(DaaSDoc::DELIMITER).collect();
+        let dir: Vec<&str> = doc_uuid.split(DELIMITER).collect();
         format!("{}/{}/{}/{}/{}",&self.path, dir[0], dir[1], dir[2], dir[3])
     }
 
     fn make_doc_uuid(doc_id: String, rev: String) -> String {
-        let uuid = format!("{}{}{}", doc_id.replace(DaaSDoc::DELIMITER, LocalStorage::DELIMITER), LocalStorage::DELIMITER, rev);
-        
-        uuid
+        format!("{}{}{}", doc_id, DELIMITER, rev)
     }
 
     // Calculates the next version of the DaaS document
@@ -262,7 +260,7 @@ impl LocalStorage {
 
                 for entry in fs::read_dir(dir_path).unwrap() {
                     let entry = entry.unwrap();
-                    latest_rev = format!("{}", entry.file_name().into_string().unwrap().split(DaaSDoc::DELIMITER).collect::<Vec<&str>>().last().unwrap());
+                    latest_rev = format!("{}", entry.file_name().into_string().unwrap().split(DELIMITER).collect::<Vec<&str>>().last().unwrap());
                 }
 
                 latest_rev
