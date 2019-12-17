@@ -60,6 +60,7 @@ impl DaaSDocStorage for LocalStorage {
     /// }
     /// ```
     fn upsert_daas_doc(&self, mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
+        // determine the revision number for the DaaS document
         let file_rev = match LocalStorage::next_rev(doc._rev.clone()) {
                     Ok(r) => {
                         r
@@ -69,6 +70,7 @@ impl DaaSDocStorage for LocalStorage {
                     },
                 };
 
+        // Calculate the file name for the DaaS document  
         let file_uuid = LocalStorage::make_doc_uuid(doc._id.clone(), file_rev.clone());
         
         //create the full directory path if doesn't exists
@@ -83,8 +85,10 @@ impl DaaSDocStorage for LocalStorage {
             },
         }
 
+        // update the revision number of the DaaS document
         doc._rev = Some(file_rev.clone());
         
+        // Try to create the file
         let json_doc = doc.serialize();
         let mut file = match File::create(self.get_doc_path(file_uuid.clone())) {
             Ok(f) => {
@@ -97,6 +101,7 @@ impl DaaSDocStorage for LocalStorage {
             }
         };
 
+        // write the DaaS document content to the file 
         match file.write_all(json_doc.as_bytes()) {
             Ok(_) => {
                 info!("Successfully inserted DaaS document {}", self.get_doc_path(file_uuid.clone()));
@@ -106,6 +111,7 @@ impl DaaSDocStorage for LocalStorage {
             },
         }
 
+        // return a Ok Result with the new/updated DaaS document
         Ok(doc)
     }
 
@@ -218,7 +224,7 @@ impl LocalStorage {
 
     fn make_doc_uuid(doc_id: String, rev: String) -> String {
         let uuid = format!("{}{}{}", doc_id.replace(DaaSDoc::DELIMITER, LocalStorage::DELIMITER), LocalStorage::DELIMITER, rev);
-        println!("{}", uuid.clone());
+        println!("Document UUID: {}", uuid.clone());
         uuid
     }
 
@@ -399,7 +405,7 @@ mod tests {
     fn test_upsert_version() {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tmp".to_string());
-        let serialized = r#"{"_id":"order|clothing|iStore|6000","_rev":"3","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":{"status":"new"}}"#;
+        let serialized = r#"{"_id":"order~clothing~iStore~6000","_rev":"3","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":{"status":"new"}}"#;
         let doc = DaaSDoc::from_serialized(&serialized);
         let updated_doc = loc.upsert_daas_doc(doc).unwrap();
 

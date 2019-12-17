@@ -667,8 +667,8 @@ mod tests {
         let cat = "order".to_string();
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
-        let id = format!("{}|{}|{}|{}",cat, sub, src, uid).to_string();
-        let serialized = r#"{"_id":"order|clothing|iStore|5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":{"status":"new"}}"#;
+        let id = format!("{}~{}~{}~{}",cat, sub, src, uid).to_string();
+        let serialized = r#"{"_id":"order~clothing~iStore~5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":{"status":"new"}}"#;
         let dua = get_dua();
         let doc = DaaSDoc::from_serialized(&serialized);
   	
@@ -715,7 +715,7 @@ mod tests {
             "status": "new"
         });
         let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth, dua, data);
-        let serialized = r#"{"_id":"order|clothing|iStore|5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":["foo","bar"],"data_obj":{"status":"new"}}"#;
+        let serialized = r#"{"_id":"order~clothing~iStore~5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":["foo","bar"],"data_obj":{"status":"new"}}"#;
         doc.add_tag("foo".to_string());
         doc.add_tag("bar".to_string());
 		assert_eq!(doc.serialize(), serialized);
@@ -735,7 +735,7 @@ mod tests {
             "status": "new"
         });
         let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
-        let no_rev = r#"{"_id":"order|clothing|iStore|5000","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_obj":{"status":"new"}}"#;
+        let no_rev = r#"{"_id":"order~clothing~iStore~5000","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_obj":{"status":"new"}}"#;
 		
         assert_eq!(doc.serialize_without_rev(), no_rev.to_string());
     } 
