@@ -3,7 +3,6 @@ use std::fs;
 use std::fs::{File};
 use std::io::prelude::*;
 use std::path::Path;
-use std::net::SocketAddr;
 
 /// A document storage management solution
 pub struct LocalStorage {
@@ -65,7 +64,7 @@ impl DaaSDocStorage for LocalStorage {
                     Ok(r) => {
                         r
                     },
-                    Err(e) => {
+                    Err(_e) => {
                         return Err(UpsertError)
                     },
                 };
@@ -76,7 +75,7 @@ impl DaaSDocStorage for LocalStorage {
         //create the full directory path if doesn't exists
         let doc_dir_path = self.get_dir_path(file_uuid.clone());
         match LocalStorage::ensure_dir_path(doc_dir_path.clone()) {
-            Err(e) => {
+            Err(_e) => {
                 error!("Could not create dynamic directory path {} to store DaaS document {}", doc_dir_path.clone(), file_uuid.clone());
                 return Err(UpsertError)
             },
@@ -155,7 +154,7 @@ impl DaaSDocStorage for LocalStorage {
                     return Err(RetrieveError)
                 },
             };
-        let mut doc = DaaSDoc::from_serialized(&serialized);
+        let doc = DaaSDoc::from_serialized(&serialized);
         
         Ok(doc)
     }
@@ -184,7 +183,7 @@ impl LocalStorage {
     /// ```
     pub fn new(dir_path: String) -> LocalStorage {
         match LocalStorage::ensure_dir_path(dir_path.clone()){
-            Err(e) => {
+            Err(_e) => {
                 warn!("Could not create directory path {} for local storage of the DaaS documents.", dir_path);
                 warn!("Using default settings ...");
                 LocalStorage::default()
@@ -298,7 +297,7 @@ mod tests {
         let data = json!({
             "status": "new"
         });
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
 
         doc
     }
@@ -340,7 +339,7 @@ mod tests {
         let loc = LocalStorage::new("./tests".to_string());
         
         let rslt = match(loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), Some("2".to_string()))) {
-            Err(e) => false,
+            Err(_e) => false,
             _ => true,
         };
 
@@ -353,7 +352,7 @@ mod tests {
         let loc = LocalStorage::new("./tests".to_string());
         
         let rslt = match(loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), Some("15".to_string()))) {
-            Err(e) => true,
+            Err(_e) => true,
             _ => false,
         };
 
@@ -379,7 +378,7 @@ mod tests {
 
     #[test]
     fn test_new_ok() {
-        let loc = LocalStorage::new("./tmp".to_string());
+        let _loc = LocalStorage::new("./tmp".to_string());
         assert!(true);
     }
 

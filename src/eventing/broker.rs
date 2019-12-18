@@ -9,7 +9,7 @@ use kafka::error::{ErrorKind, KafkaCode};
 pub static KAFKA_BROKERS: &str = "localhost:9092";
 
 pub fn make_topic(doc: DaaSDoc) -> String {
-    format!("{}{}{}{}{}", doc.category, DELIMITER, doc.subcategory, DELIMITER, doc.source_name)
+    format!("{}.{}.{}", doc.category, doc.subcategory, doc.source_name)
 }
 
 pub fn produce_message<'a, 'b>(data: &'a [u8], topic: &'b str, brokers: Vec<String>) -> Result<(), kafka::error::ErrorKind> {
@@ -71,14 +71,15 @@ mod tests {
         let data = json!({
             "status": "new"
         });
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+        
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
 
         doc
     }
 
     #[test]
     fn test_make_topic(){
-        assert_eq!(broker::make_topic(get_daas_doc()), "order~clothing~iStore".to_string());
+        assert_eq!(broker::make_topic(get_daas_doc()), "order.clothing.iStore".to_string());
     }
 
     #[ignore]
