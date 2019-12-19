@@ -3,37 +3,8 @@
 //! 
 
 use super::*;
+use crate::errors::*;
 use crate::doc::*;
-use std::error;
-use std::fmt;
-
-enum DaaSStorageError {
-    RetrieveError,
-    UpsertError,
-}
-
-#[derive(Debug, Clone)]
-pub struct RetrieveError;
-
-impl fmt::Display for RetrieveError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Unable to retrieve the DaaS document.")
-    }
-}
-
-impl error::Error for RetrieveError{}
-
-#[derive(Debug, Clone)]
-pub struct UpsertError;
-
-impl fmt::Display for UpsertError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Unable to save or update the DaaS document.")
-    }
-}
-
-impl error::Error for UpsertError{}
-
 
 /// Trait for storage devices that manage DaaS documents
 pub trait DaaSDocStorage {

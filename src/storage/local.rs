@@ -226,7 +226,7 @@ impl LocalStorage {
     }
 
     // Calculates the next version of the DaaS document
-    fn next_rev(revision: Option<String>) -> Result<String, DaaSError> {
+    fn next_rev(revision: Option<String>) -> Result<String, DaaSDocError> {
         match revision {
             None => Ok("0".to_string()),
             Some(rev) => {
@@ -237,7 +237,7 @@ impl LocalStorage {
                     },
                     Err(_e) => {
                         error!("Could not increment the revision of the DaaS document!");
-                        Err(DaaSError)
+                        Err(DaaSDocError)
                     }, 
                 }
             }
@@ -351,7 +351,7 @@ mod tests {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tests".to_string());
         
-        let rslt = match(loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), Some("15".to_string()))) {
+        let rslt = match loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), Some("15".to_string())) {
             Err(_e) => true,
             _ => false,
         };

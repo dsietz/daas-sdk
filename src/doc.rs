@@ -40,8 +40,6 @@
 //! ```
 
 use crate::*;
-use std::error;
-use std::fmt;
 use std::collections::BTreeMap;
 use serde_json::value::*;
 use futures::Future;
@@ -49,21 +47,6 @@ use pbd::dua::DUA;
 
 // Repesentation of a map for storing metadata about the data object
 type Metadata = BTreeMap<String, String>;
-
-/// Defining a DaaS Error
-/// see https://doc.rust-lang.org/src/std/io/error.rs.html#229-512 for further details
-#[derive(Debug, Clone)]
-pub struct DaaSError;
-
-/// Define how a DaaSError will be displayed
-impl fmt::Display for DaaSError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Unable to perform the DaaS operation!")
-    }
-}
-
-// This is important for other errors to wrap this one.
-impl error::Error for DaaSError {}
 
 /// Represents an existing DaaS document (after it has been saved and assigned a _rev value)
 #[derive(Serialize, Deserialize, Debug, Clone)]
