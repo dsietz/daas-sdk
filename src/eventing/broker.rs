@@ -6,7 +6,7 @@ use kafka::client::KafkaClient;
 use kafka::producer::{Producer, Record, RequiredAcks};
 use kafka::error::{ErrorKind, KafkaCode};
 
-pub static KAFKA_BROKERS: &str = "18.212.66.92:9092";
+pub static KAFKA_BROKERS: &str = "localhost:9092";
 
 pub fn make_topic(doc: DaaSDoc) -> String {
     format!("{}.{}.{}", doc.category, doc.subcategory, doc.source_name)

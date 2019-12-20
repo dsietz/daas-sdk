@@ -4,29 +4,27 @@ use crate::doc::*;
 use crate::storage::{DaaSDocStorage};
 use crate::storage::local::{LocalStorage};
 use std::thread;
-// testing
-use std::time::Duration;
 
-pub trait DaaSListener {
-    fn mark_doc_as_processed( storage: LocalStorage, mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
-        let daas_id = doc._id.clone();
-
-        // mark the document as processed
-        doc.process_ind = true;
-
-        // save the modified document
-        match storage.upsert_daas_doc(doc) {
-            Ok(d) => {
-                debug!("Daas document [{}] has been mark processes.", daas_id);
-                Ok(d)
-            },
-            Err(e) => {
-                error!("Could not save the DaaS document [{}] with process_ind=true. Error message: [{}]", daas_id, e);
-                Err(UpsertError)
-            },
-        }
+pub trait DaaSListenerService {
+    fn index(params: Path<Info>, duas: DUAs, body: String, req: HttpRequest) -> HttpResponse;
+    fn health(_req: HttpRequest) -> HttpResponse   {
+        return HttpResponse::Ok()
+                .header(http::header::CONTENT_TYPE, "application/json")
+                .body(r#"{"status":"OK"}"#)
     }
+}
 
+#[derive(Deserialize)]
+pub struct Info {
+    category: String,
+    subcategory: String,
+    source_name: String,
+    source_uid: usize,
+}
+
+pub struct DaaSListener {}
+
+impl DaaSListener {
     fn broker_document(mut doc: DaaSDoc) -> Result<DaaSDoc, BrokerError>{
         let daas_id = doc._id.clone();
         let topic = broker::make_topic(doc.clone());
@@ -48,7 +46,34 @@ pub trait DaaSListener {
         rspns
     }
 
-    fn process_data(&self, doc: DaaSDoc) -> Result<DaaSDoc, UpsertError> {
+    pub fn get_service_health() -> String {
+        "/health".to_string()
+    }
+
+    pub fn get_service_path() -> String {
+        "/{category}/{subcategory}/{source_name}/{source_uid}".to_string()
+    }
+
+    fn mark_doc_as_processed(storage: LocalStorage, mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
+        let daas_id = doc._id.clone();
+
+        // mark the document as processed
+        doc.process_ind = true;
+
+        // save the modified document
+        match storage.upsert_daas_doc(doc) {
+            Ok(d) => {
+                debug!("Daas document [{}] has been mark processes.", daas_id);
+                Ok(d)
+            },
+            Err(e) => {
+                error!("Could not save the DaaS document [{}] with process_ind=true. Error message: [{}]", daas_id, e);
+                Err(UpsertError)
+            },
+        }
+    }
+
+    pub fn process_data(doc: DaaSDoc) -> Result<DaaSDoc, UpsertError> {
         // store a local copy so data isn't lost
         let storage = LocalStorage::new("./tests".to_string());
         let doc = match storage.upsert_daas_doc(doc) {
@@ -62,11 +87,11 @@ pub trait DaaSListener {
         // start an detached thread to broker the document
         let mut doc2broker = doc.clone();
         thread::spawn(move || {
-            match broker_document(doc2broker) {
+            match DaaSListener::broker_document(doc2broker.clone()) {
                 Ok(d) => {
-                    match mark_doc_as_processed(storage, d) {
+                    match DaaSListener::mark_doc_as_processed(storage, d) {
                         Ok(d2) => {
-
+                            info!("DaaS coument {} has been successfully sent to the broker.", doc2broker._id);
                         },
                         Err(e2) => {
                             error!("Could not mark the DaaS document {} as processed. Error message: [{}]", doc2broker._id, e2);
@@ -79,56 +104,64 @@ pub trait DaaSListener {
             }
         });
 
-        // return with a Ok(doc)
-        debug!("Sent back a status 200");
+        // return
         Ok(doc)
+    }
+}
+
+impl DaaSListenerService for DaaSListener {
+    fn index(params: Path<Info>, duas: DUAs, body: String, req: HttpRequest) -> HttpResponse {
+        let cat: String = params.category.clone();
+        let subcat: String = params.subcategory.clone();
+        let srcnme: String = params.source_name.clone();
+        let srcuid: usize = params.source_uid;
+
+        // verify body is json
+        let data = match serde_json::from_str(&body) {
+            Ok(d) => d,
+            _ => {
+                return HttpResponse::BadRequest()
+                    .header(http::header::CONTENT_TYPE, "application/json")
+                    .body(r#"{"error":"Bad Json"}"#) 
+            },
+        };
+
+        let usr = "myself".to_string();
+        let doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), data);
+        
+        match DaaSListener::process_data(doc) {
+            Ok(_d) => {
+                HttpResponse::Ok()
+                    .header(http::header::CONTENT_TYPE, "plain/text")
+                    .body(r#"Hello World!"#) 
+            },
+            Err(_e) => {
+                HttpResponse::UnprocessableEntity()
+                    .header(http::header::CONTENT_TYPE, "application/json")
+                    .body(r#"{"error":"unable to process data"}"#)
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::time::Duration;
 
     #[test]
     fn test_process_data() {
         let _ = env_logger::builder().is_test(true).try_init();
-
-        struct MyListener {};
-        impl DaaSListener for MyListener{};
-        let listener = MyListener{};
-        
         let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":{"status":"new"}}"#;
         let doc = DaaSDoc::from_serialized(&serialized);
         
-        let handle = thread::spawn(|| {
+        let handle = thread::spawn(move || {
             println!("Mock service running ...");
-            assert!(listener.process_data(doc).is_ok());
+            assert!(DaaSListener::process_data(doc).is_ok());
             thread::sleep(Duration::from_secs(10));
             println!("Mock service stopped.");
         });
 
         handle.join().unwrap();
-    }
-
-    use std::fmt::Write;
-    use std::time::Duration;
-    use kafka::producer::{Producer, Record, RequiredAcks};
-
-    #[ignore]
-    #[test]
-    fn test_kafka_producer(){
-        let mut producer =
-        Producer::from_hosts(vec!("18.212.66.92:9092".to_owned()))
-            .with_ack_timeout(Duration::from_secs(1))
-            .with_required_acks(RequiredAcks::One)
-            .create()
-            .unwrap();
-
-        let mut buf = String::with_capacity(2);
-        for i in 0..10 {
-          let _ = write!(&mut buf, "{}", i); // some computation of the message data to be sent
-          producer.send(&Record::from_value("test", buf.as_bytes())).unwrap();
-          buf.clear();
-        }
     }
 }

@@ -5,6 +5,7 @@ extern crate log;
 extern crate pbd;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate serde_json;
+extern crate actix_web;
 
 use log::*;
 use std::env;
