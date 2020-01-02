@@ -2,7 +2,7 @@
 
 # Data as a Service (DaaS) SDK
 
-For software development teams who implement the [Data as a Service (DaaS)](https://github.com/dsietz/daas) pattern and follow the practice of Privacy by Design (PbD), this DaaS SDK provides enablers to help you easily and transparently applying best practices. Unlike other solutions, this SDK bridges the microservice based DaaS architecture pattern with Data Privacy strategies to provide a complete tool kit and saves developers time from having to search, derive, or piece together disparate solutions.
+For software development teams who implement the [Data as a Service (DaaS)](https://github.com/dsietz/daas) pattern and follow the practice of [Privacy by Design (PbD)](https://github.com/dsietz/pbd), this DaaS SDK provides enablers to help you easily and transparently applying best practices. Unlike other solutions, this SDK bridges the microservice based DaaS architecture pattern with Data Privacy strategies to provide a complete tool kit and saves developers time from having to search, derive, or piece together disparate solutions.
 
 ---
 
