@@ -27,11 +27,11 @@
 //!         location: "https://dua.org/agreements/v1/billing.pdf".to_string(),
 //!         agreed_dtm: 1553988607,
 //!     });
-//!		let data = json!({
+//!		let data = String::from(r#"{
 //!         "product": "leather coat",
 //!         "quantity": 1,
 //!		    "status": "new"
-//!		});
+//!		}"#).as_bytes().to_vec();
 //! 
 //!		let doc = DaaSDoc::new(src, uid, cat, sub, auth, dua, data);
 //! 
@@ -75,8 +75,8 @@ pub struct DaaSDoc {
     pub meta_data: Metadata,
     // List of tags to provide context about the data object
     pub tags: Vec<String>,
-    /// The JSON value that represents the data from the data source managed by the DaaS document
-    pub data_obj: Value,
+    /// The byte slice that represents the data from the data source managed by the DaaS document
+    pub data_obj: Vec<u8>,
 }
 
 /// Represents an new DaaS document (before it has been saved and assigned a _rev value)
@@ -100,8 +100,8 @@ struct DaaSDocNoRev{
     pub last_updated: u64,
     /// The list of Data Usage Agreements for the data represented in the DaaS Document
     pub data_usage_agreements: Vec<DUA>,
-    /// The JSON value that represents the data from the data source managed by the DaaS document
-    pub data_obj: Value,
+    /// The byte slice that represents the data from the data source managed by the DaaS document
+    pub data_obj: Vec<u8>,
 }
 
 impl DaaSDoc {
@@ -140,16 +140,14 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();     
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
-    ///     let data = json!({
-    ///         "status": "new"
-    ///     });
+    ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
     ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
     ///     
     ///     println!("{:?}", doc._id);
     /// }
     /// ```
-    pub fn new(src_name: String, src_uid: usize, cat: String, subcat: String, auth: String, duas: Vec<DUA>, data: Value) -> DaaSDoc {
+    pub fn new(src_name: String, src_uid: usize, cat: String, subcat: String, auth: String, duas: Vec<DUA>, data: Vec<u8>) -> DaaSDoc {
         DaaSDoc {
             _id: DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), src_uid),
             _rev: None,
@@ -194,9 +192,7 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
-    ///     let data = json!({
-    ///         "status": "new"
-    ///     });
+    ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
     ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
     ///     doc.add_meta("foo".to_string(),"bar".to_string());
@@ -234,9 +230,7 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
-    ///     let data = json!({
-    ///         "status": "new"
-    ///     });
+    ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
     ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
     ///     doc.add_tag("foo".to_string());
@@ -271,16 +265,15 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
-    ///     let data = json!({
-    ///         "status": "new"
-    ///     });
+    ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
     ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
     ///     
-    ///     assert_eq!(doc.data_obj.get("status").unwrap(), "new");
+    ///     let dat: Value = serde_json::from_str(&String::from_utf8(doc.data_obj).unwrap()).unwrap();
+    ///     assert_eq!(dat.get("status").unwrap(), "new");
     /// }
     /// ```
-    pub fn data_obj_as_ref(&mut self) -> &mut Value {
+    pub fn data_obj_as_ref(&mut self) -> &mut Vec<u8> {
         &mut self.data_obj
     }    
 
@@ -298,7 +291,7 @@ impl DaaSDoc {
     /// use daas::doc::DaaSDoc;
     ///
     /// fn main() {
-    ///     let serialized = r#"{"_id":"order|clothing|iStore|5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":{"status":"new"}}"#;
+    ///     let serialized = r#"{"_id":"order|clothing|iStore|5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
     ///     let doc = DaaSDoc::from_serialized(&serialized);
   	///     
     ///     assert_eq!(doc.source_uid, 5000);
@@ -335,9 +328,7 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
-    ///     let data = json!({
-    ///         "status": "new"
-    ///     });
+    ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
     ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
     ///     doc.add_meta("foowho".to_string(),"me".to_string());
@@ -372,9 +363,7 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
-    ///     let data = json!({
-    ///         "status": "new"
-    ///     });
+    ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
     ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
     ///     doc.add_tag("foo".to_string());
@@ -409,9 +398,7 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
-    ///     let data = json!({
-    ///         "status": "new"
-    ///     });
+    ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
     ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
     ///     doc.add_tag("foo".to_string());
@@ -460,9 +447,7 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
-    ///     let data = json!({
-    ///         "status": "new"
-    ///     });
+    ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
     ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
     ///     
@@ -496,9 +481,7 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
-    ///     let data = json!({
-    ///         "status": "new"
-    ///     });
+    ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
     ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
     ///     
@@ -547,9 +530,7 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let data = json!({
-            "status": "new"
-        });
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
         doc.add_tag("foo".to_string());
         doc.add_tag("bar".to_string());
@@ -566,9 +547,7 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let data = json!({
-            "status": "new"
-        });
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         let _doc = DaaSDoc::new(src, uid, cat, sub, auth, dua, data);
         
         assert!(true);
@@ -583,9 +562,7 @@ mod tests {
         let auth = "istore_app".to_string();
         let id = format!("{}~{}~{}~{}",cat, sub, src, uid).to_string();
         let dua = get_dua();
-        let data = json!({
-            "status": "new"
-        });
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         let doc = DaaSDoc::new(src, uid, cat, sub, auth, dua, data);
         
         assert_eq!(doc._id, id);
@@ -599,9 +576,7 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let data = json!({
-            "status": "new"
-        });
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         let doc = DaaSDoc::new(src, uid, cat, sub, auth, dua, data);
         
         assert!(doc._rev.is_none());
@@ -615,9 +590,7 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let data = json!({
-            "status": "new"
-        });
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
         
         assert_eq!(doc.source_name, src);
@@ -635,12 +608,12 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let data = json!({
-            "status": "new"
-        });
-        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data); 
+
+        let dat: Value = serde_json::from_str(&String::from_utf8(doc.data_obj).unwrap()).unwrap();
         
-        assert_eq!(doc.data_obj.get("status").unwrap(), "new");
+        assert_eq!(dat.get("status").unwrap(), "new");
     }     
 
     #[test]
@@ -651,9 +624,11 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let id = format!("{}~{}~{}~{}",cat, sub, src, uid).to_string();
-        let serialized = r#"{"_id":"order~clothing~iStore~5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":{"status":"new"}}"#;
+        let serialized = r#"{"_id":"order~clothing~iStore~5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
         let dua = get_dua();
         let doc = DaaSDoc::from_serialized(&serialized);
+
+        let dat: Value = serde_json::from_str(&String::from_utf8(doc.data_obj).unwrap()).unwrap();
   	
         assert_eq!(doc._id, id);
         assert!(doc._rev.is_none());
@@ -664,7 +639,7 @@ mod tests {
         assert_eq!(doc.author, auth);
         assert_eq!(doc.process_ind, false);
         assert_eq!(doc.data_usage_agreements[0].agreement_name, dua[0].agreement_name);
-		assert_eq!(doc.data_obj.get("status").unwrap(), "new");
+		assert_eq!(dat.get("status").unwrap(), "new");
     }    
 
     #[test]
@@ -675,9 +650,7 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let data = json!({
-            "status": "new"
-        });
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
         doc.add_meta("foo".to_string(),"bar".to_string());
         
@@ -694,9 +667,7 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let data = json!({
-            "status": "new"
-        });
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth, dua, data);
         let serialized = r#"{"_id":"order~clothing~iStore~5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":["foo","bar"],"data_obj":{"status":"new"}}"#;
         doc.add_tag("foo".to_string());
@@ -714,9 +685,7 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let data = json!({
-            "status": "new"
-        });
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
         let no_rev = r#"{"_id":"order~clothing~iStore~5000","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_obj":{"status":"new"}}"#;
 		
@@ -731,9 +700,7 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let data = json!({
-            "status": "new"
-        });
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
         doc.add_tag("foo".to_string());
         doc.add_tag("bar".to_string());
