@@ -68,9 +68,7 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let data = json!({
-            "status": "new"
-        });
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         
         let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
 

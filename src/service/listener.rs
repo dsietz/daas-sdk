@@ -31,7 +31,7 @@ pub struct Info {
 pub struct DaaSListener {}
 
 impl DaaSListener {
-    fn broker_document(mut doc: DaaSDoc) -> Result<DaaSDoc, BrokerError>{
+    fn broker_document(doc: DaaSDoc) -> Result<DaaSDoc, BrokerError>{
         let daas_id = doc._id.clone();
         let topic = broker::make_topic(doc.clone());
         let brokers: Vec<String> = broker::KAFKA_BROKERS.split(",").map(|s|{s.to_string()}).collect();
@@ -54,12 +54,9 @@ impl DaaSListener {
 
     fn mark_doc_as_processed(storage: LocalStorage, mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
         let daas_id = doc._id.clone();
-
-        // mark the document as processed
-        doc.process_ind = true;
-
+        
         // save the modified document
-        match storage.upsert_daas_doc(doc) {
+        match storage.mark_doc_as_processed(doc) {
             Ok(d) => {
                 debug!("Daas document [{}] has been mark processes.", daas_id);
                 Ok(d)
@@ -83,7 +80,7 @@ impl DaaSListener {
         };
                 
         // start an detached thread to broker the document
-        let mut doc2broker = doc.clone();
+        let doc2broker = doc.clone();
         thread::spawn(move || {
             match DaaSListener::broker_document(doc2broker.clone()) {
                 Ok(d) => {
@@ -115,18 +112,8 @@ impl DaaSListenerService for DaaSListener {
         let srcnme: String = params.source_name.clone();
         let srcuid: usize = params.source_uid;
 
-        // verify body is json
-        let data = match serde_json::from_str(&body) {
-            Ok(d) => d,
-            _ => {
-                return HttpResponse::BadRequest()
-                    .header(http::header::CONTENT_TYPE, "application/json")
-                    .body(r#"{"error":"Bad Json"}"#) 
-            },
-        };
-
         let usr = "myself".to_string();
-        let doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), data);
+        let doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), body.as_bytes().to_vec());
         
         match DaaSListener::process_data(doc) {
             Ok(_d) => {
@@ -151,7 +138,7 @@ mod test {
     #[test]
     fn test_process_data() {
         let _ = env_logger::builder().is_test(true).try_init();
-        let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":{"status":"new"}}"#;
+        let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
         let doc = DaaSDoc::from_serialized(&serialized);
         
         let handle = thread::spawn(move || {

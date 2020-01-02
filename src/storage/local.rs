@@ -20,7 +20,7 @@ impl Default for LocalStorage {
 }
 
 impl DaaSDocStorage for LocalStorage {
-    /// Save a new Daas document into persistant storage
+    /// Save a Daas document into persistant storage based upon the revision of the document
     /// 
     /// # Arguments
     /// 
@@ -48,9 +48,7 @@ impl DaaSDocStorage for LocalStorage {
     ///     let auth = "istore_app".to_string();     
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
-    ///     let data = json!({
-    ///         "status": "new"
-    ///     });
+    ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
     ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
     ///     let storage = LocalStorage::new("./tmp".to_string());
@@ -59,8 +57,20 @@ impl DaaSDocStorage for LocalStorage {
     /// }
     /// ```
     fn upsert_daas_doc(&self, mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
-        // determine the revision number for the DaaS document
-        let file_rev = match LocalStorage::next_rev(doc._rev.clone()) {
+        // make sure the DaaS document provided is the latest revision
+        let latest_rev = self.latest_rev(doc._id.clone());
+
+        match doc._rev.clone() {
+            Some(r) => {
+                if latest_rev != r {
+                    return Err(UpsertError)
+                }
+            },
+            None => {},
+        }
+
+        // get the latest revision number and increment it
+        let file_rev = match LocalStorage::next_rev(Some(latest_rev)) {
                     Ok(r) => {
                         r
                     },
@@ -225,6 +235,48 @@ impl LocalStorage {
         format!("{}{}{}", doc_id, DELIMITER, rev)
     }
 
+    pub fn mark_doc_as_processed(&self, mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
+        let mut doc = match self.get_doc_by_id(doc._id, doc._rev) {
+            Ok(d) => d,
+            Err(e) => {
+                error!("Error: cannot mark DaaS document as processed. {}", e);
+                return Err(UpsertError)
+            }
+        };
+
+        doc.process_ind = true;
+
+        // overwrite the file
+
+        // Calculate the file name for the DaaS document  
+        let file_uuid = LocalStorage::make_doc_uuid(doc._id.clone(), doc._rev.clone().unwrap());
+
+        // Try to create the file
+        let json_doc = doc.serialize();
+        let mut file = match File::create(self.get_doc_path(file_uuid.clone())) {
+            Ok(f) => {
+                debug!("Created file {}", self.get_doc_path(file_uuid.clone()));
+                f
+            },
+            Err(e) => {
+                error!("Could not create DaaS document file {} because of {}.", self.get_doc_path(file_uuid.clone()), e);
+                return Err(UpsertError)
+            }
+        };
+
+        // write the DaaS document content to the file 
+        match file.write_all(json_doc.as_bytes()) {
+            Ok(_) => {
+                info!("Successfully inserted DaaS document {}", self.get_doc_path(file_uuid.clone()));
+                Ok(doc)
+            },
+            Err(_e) => {
+                error!("Could not write content to the Daas document {}", self.get_doc_path(file_uuid.clone()));
+                return Err(UpsertError)
+            },
+        }
+    }
+
     // Calculates the next version of the DaaS document
     fn next_rev(revision: Option<String>) -> Result<String, DaaSDocError> {
         match revision {
@@ -294,9 +346,7 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let data = json!({
-            "status": "new"
-        });
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
 
         doc
@@ -399,13 +449,59 @@ mod tests {
     }
 
     #[test]
-    fn test_upsert_version() {
+    fn test_upsert_binary_new() {
+        // prepare the DaaS data
+        let src = "iStore".to_string();
+        let uid = 16500;
+        let cat = "order".to_string();
+        let sub = "music".to_string();
+        let auth = "istore_app".to_string();
+        let dua = get_dua();
+
+        let mut file1 = match File::open("./tests/example_audio_clip.mp3") {
+            Ok(aud) => aud,
+            Err(err) => {
+                panic!("Cannot read the audio file: {}",err);
+                assert!(false);
+            },
+        };
+
+        let mut data = Vec::new();
+        file1.read_to_end(&mut data).unwrap();
+
+        // store the DaaSDoc
+        let _ = env_logger::builder().is_test(true).try_init();
+        let loc = LocalStorage::new("./tests".to_string());
+        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data); 
+        let file_name = LocalStorage::make_doc_uuid(doc._id.clone(), 0.to_string());
+
+        assert!(loc.upsert_daas_doc(doc).is_ok());
+        assert!(Path::new(&format!("{}/order/music/iStore/16500/{}", loc.path, file_name)).is_file());        
+        
+        // reteive the DaaSDoc from storage
+        let mut f = File::open(format!("{}/order/music/iStore/16500/{}", loc.path, file_name)).unwrap();
+        let mut content = Vec::new();
+        f.read_to_end(&mut content).unwrap();
+        let doc = DaaSDoc::from_serialized(&String::from_utf8(content).unwrap());
+
+        // create an audio file from the DaaSDoc data object
+        let mut file2 = File::create(Path::new(&format!("{}/order/music/iStore/16500/example_audio_clip.mp3", loc.path))).unwrap();
+        match file2.write_all(&doc.data_obj) {
+            Ok(_aud) => assert!(true),
+            Err(_e) => assert!(false),
+        }
+
+        // make sure both files are the same
+        assert_eq!(fs::metadata("./tests/example_audio_clip.mp3").unwrap().len(), fs::metadata(format!("{}/order/music/iStore/16500/example_audio_clip.mp3", loc.path)).unwrap().len());
+    }
+
+    #[test]
+    fn test_upsert_bad_revision() {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tmp".to_string());
-        let serialized = r#"{"_id":"order~clothing~iStore~6000","_rev":"3","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":{"status":"new"}}"#;
+        let serialized = r#"{"_id":"order~clothing~iStore~6000","_rev":"4","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
         let doc = DaaSDoc::from_serialized(&serialized);
-        let updated_doc = loc.upsert_daas_doc(doc).unwrap();
 
-        assert_eq!(updated_doc._rev.unwrap(), "4".to_string());
+        assert!(loc.upsert_daas_doc(doc).is_err());
     }
 }
