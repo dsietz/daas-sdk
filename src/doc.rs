@@ -511,6 +511,9 @@ impl DaaSDoc {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io;
+    use std::io::prelude::*;
+    use std::fs::File;
 
     fn get_dua() -> Vec<DUA>{
         let mut v = Vec::new();
@@ -601,6 +604,31 @@ mod tests {
     } 
 
     #[test]
+    fn test_doc_binary_data_ok() {
+        let src = "iStore".to_string();
+        let uid = 16500;
+        let cat = "order".to_string();
+        let sub = "music".to_string();
+        let auth = "istore_app".to_string();
+        let dua = get_dua();
+
+        let mut f = match File::open("./tests/example_audio_clip.mp3") {
+            Ok(aud) => aud,
+            Err(err) => {
+                panic!("Cannot read the audio file: {}",err);
+                assert!(false);
+            },
+        };
+
+        let mut data = Vec::new();
+        f.read_to_end(&mut data).unwrap();
+
+        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data); 
+        
+        assert_eq!(doc.data_obj_as_ref().len(),764176);
+    } 
+    
+    #[test]
     fn test_doc_data_ok() {
         let src = "iStore".to_string();
         let uid = 5000;
@@ -614,7 +642,7 @@ mod tests {
         let dat: Value = serde_json::from_str(&String::from_utf8(doc.data_obj).unwrap()).unwrap();
         
         assert_eq!(dat.get("status").unwrap(), "new");
-    }     
+    } 
 
     #[test]
     fn test_from_serialize(){
@@ -656,41 +684,6 @@ mod tests {
         
         assert_eq!(doc.get_meta("foo".to_string()), "bar");
     }   
-
-    // fails becuase of the last_updated unix timestamp is genrated at runtime
-    #[ignore]
-    #[test]
-    fn test_serialize(){
-        let src = "iStore".to_string();
-        let uid = 5000;
-        let cat = "order".to_string();
-        let sub = "clothing".to_string();
-        let auth = "istore_app".to_string();
-        let dua = get_dua();
-        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth, dua, data);
-        let serialized = r#"{"_id":"order~clothing~iStore~5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":["foo","bar"],"data_obj":{"status":"new"}}"#;
-        doc.add_tag("foo".to_string());
-        doc.add_tag("bar".to_string());
-		assert_eq!(doc.serialize(), serialized);
-    }    
-
-    // fails becuase of the last_updated unix timestamp is genrated at runtime
-    #[ignore]
-    #[test]
-    fn test_serialize_without_rev(){
-        let src = "iStore".to_string();
-        let uid = 5000;
-        let cat = "order".to_string();
-        let sub = "clothing".to_string();
-        let auth = "istore_app".to_string();
-        let dua = get_dua();
-        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
-        let no_rev = r#"{"_id":"order~clothing~iStore~5000","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_obj":{"status":"new"}}"#;
-		
-        assert_eq!(doc.serialize_without_rev(), no_rev.to_string());
-    } 
     
     #[test]
     fn test_tagging_ok() {

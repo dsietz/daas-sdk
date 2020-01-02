@@ -31,7 +31,7 @@ pub struct Info {
 pub struct DaaSListener {}
 
 impl DaaSListener {
-    fn broker_document(mut doc: DaaSDoc) -> Result<DaaSDoc, BrokerError>{
+    fn broker_document(doc: DaaSDoc) -> Result<DaaSDoc, BrokerError>{
         let daas_id = doc._id.clone();
         let topic = broker::make_topic(doc.clone());
         let brokers: Vec<String> = broker::KAFKA_BROKERS.split(",").map(|s|{s.to_string()}).collect();
@@ -83,7 +83,7 @@ impl DaaSListener {
         };
                 
         // start an detached thread to broker the document
-        let mut doc2broker = doc.clone();
+        let doc2broker = doc.clone();
         thread::spawn(move || {
             match DaaSListener::broker_document(doc2broker.clone()) {
                 Ok(d) => {

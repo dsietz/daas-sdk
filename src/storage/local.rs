@@ -395,6 +395,53 @@ mod tests {
     }
 
     #[test]
+    fn test_upsert_binary_new() {
+        // prepare the DaaS data
+        let src = "iStore".to_string();
+        let uid = 16500;
+        let cat = "order".to_string();
+        let sub = "music".to_string();
+        let auth = "istore_app".to_string();
+        let dua = get_dua();
+
+        let mut file1 = match File::open("./tests/example_audio_clip.mp3") {
+            Ok(aud) => aud,
+            Err(err) => {
+                panic!("Cannot read the audio file: {}",err);
+                assert!(false);
+            },
+        };
+
+        let mut data = Vec::new();
+        file1.read_to_end(&mut data).unwrap();
+
+        // store the DaaSDoc
+        let _ = env_logger::builder().is_test(true).try_init();
+        let loc = LocalStorage::new("./tests".to_string());
+        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data); 
+        let file_name = LocalStorage::make_doc_uuid(doc._id.clone(), 0.to_string());
+
+        assert!(loc.upsert_daas_doc(doc).is_ok());
+        assert!(Path::new(&format!("{}/order/music/iStore/16500/{}", loc.path, file_name)).is_file());        
+        
+        // reteive the DaaSDoc from storage
+        let mut f = File::open(format!("{}/order/music/iStore/16500/{}", loc.path, file_name)).unwrap();
+        let mut content = Vec::new();
+        f.read_to_end(&mut content).unwrap();
+        let doc = DaaSDoc::from_serialized(&String::from_utf8(content).unwrap());
+
+        // create an audio file from the DaaSDoc data object
+        let mut file2 = File::create(Path::new(&format!("{}/order/music/iStore/16500/example_audio_clip.mp3", loc.path))).unwrap();
+        match file2.write_all(&doc.data_obj) {
+            Ok(_aud) => assert!(true),
+            Err(_e) => assert!(false),
+        }
+
+        // make sure both files are the same
+        assert_eq!(fs::metadata("./tests/example_audio_clip.mp3").unwrap().len(), fs::metadata(format!("{}/order/music/iStore/16500/example_audio_clip.mp3", loc.path)).unwrap().len());
+    }
+
+    #[test]
     fn test_upsert_version() {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tmp".to_string());
