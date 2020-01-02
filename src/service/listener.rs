@@ -54,12 +54,9 @@ impl DaaSListener {
 
     fn mark_doc_as_processed(storage: LocalStorage, mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
         let daas_id = doc._id.clone();
-
-        // mark the document as processed
-        doc.process_ind = true;
-
+        
         // save the modified document
-        match storage.upsert_daas_doc(doc) {
+        match storage.mark_doc_as_processed(doc) {
             Ok(d) => {
                 debug!("Daas document [{}] has been mark processes.", daas_id);
                 Ok(d)
@@ -115,18 +112,8 @@ impl DaaSListenerService for DaaSListener {
         let srcnme: String = params.source_name.clone();
         let srcuid: usize = params.source_uid;
 
-        // verify body is json
-        let data = match serde_json::from_str(&body) {
-            Ok(d) => d,
-            _ => {
-                return HttpResponse::BadRequest()
-                    .header(http::header::CONTENT_TYPE, "application/json")
-                    .body(r#"{"error":"Bad Json"}"#) 
-            },
-        };
-
         let usr = "myself".to_string();
-        let doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), data);
+        let doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), body.as_bytes().to_vec());
         
         match DaaSListener::process_data(doc) {
             Ok(_d) => {
