@@ -1,0 +1,83 @@
+{
+	"info": {
+		"_postman_id": "c34879bc-68b0-4d47-a475-2e54d0f9ffe4",
+		"name": "daas-sdk",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "daas-listener-post-data",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Data-Usage-Agreement",
+						"value": "[{\"agreement_name\":\"billing\",\"location\":\"www.dua.org/billing.pdf\",\"agreed_dtm\": 1553988607}]",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"quantity\": 1,\n\t\"status\":\"new\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8088/order/clothing/iStore/100009",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"order",
+						"clothing",
+						"iStore",
+						"100009"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "daas-listener-health-check",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Data-Usage-Agreement",
+						"value": "[{\"agreement_name\":\"billing\",\"location\":\"www.dua.org/billing.pdf\",\"agreed_dtm\": 1553988607}]",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8088/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}

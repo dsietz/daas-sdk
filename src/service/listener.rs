@@ -7,6 +7,12 @@ use std::thread;
 
 pub trait DaaSListenerService {
     fn index(params: Path<Info>, duas: DUAs, body: String, req: HttpRequest) -> HttpResponse;
+    fn get_service_health_path() -> String {
+        "/health".to_string()
+    }
+    fn get_service_path() -> String {
+        "/{category}/{subcategory}/{source_name}/{source_uid}".to_string()
+    }
     fn health(_req: HttpRequest) -> HttpResponse   {
         return HttpResponse::Ok()
                 .header(http::header::CONTENT_TYPE, "application/json")
@@ -46,14 +52,6 @@ impl DaaSListener {
         rspns
     }
 
-    pub fn get_service_health() -> String {
-        "/health".to_string()
-    }
-
-    pub fn get_service_path() -> String {
-        "/{category}/{subcategory}/{source_name}/{source_uid}".to_string()
-    }
-
     fn mark_doc_as_processed(storage: LocalStorage, mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
         let daas_id = doc._id.clone();
 
@@ -89,6 +87,7 @@ impl DaaSListener {
         thread::spawn(move || {
             match DaaSListener::broker_document(doc2broker.clone()) {
                 Ok(d) => {
+                    // based on cofiguration, should the local document be (1) updated or (2) deleted after processes
                     match DaaSListener::mark_doc_as_processed(storage, d) {
                         Ok(d2) => {
                             info!("DaaS coument {} has been successfully sent to the broker.", doc2broker._id);
@@ -132,8 +131,8 @@ impl DaaSListenerService for DaaSListener {
         match DaaSListener::process_data(doc) {
             Ok(_d) => {
                 HttpResponse::Ok()
-                    .header(http::header::CONTENT_TYPE, "plain/text")
-                    .body(r#"Hello World!"#) 
+                    .header(http::header::CONTENT_TYPE, "application/json")
+                    .body(r#"{"status":"ok"}"#) 
             },
             Err(_e) => {
                 HttpResponse::UnprocessableEntity()
