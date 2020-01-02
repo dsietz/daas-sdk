@@ -19,11 +19,12 @@ For software development teams who implement the [Data as a Service (DaaS)](http
 Here's whats new in 0.0.1:
 
 This project and codebase for this crate has change 
-1. 
+1. Initial code base
 
 ## Features
 
-- 
+- local storage of the DaaS document for listener service
+- implement Kafka brokering as an independent thread when processing the sourced data 
 
 ## About
 
