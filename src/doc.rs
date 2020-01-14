@@ -21,12 +21,12 @@
 //!		let cat = "order".to_string();
 //!		let sub = "clothing".to_string();
 //!		let auth = "istore_app".to_string();
-//!     let mut dua = Vec::new();
-//!     dua.push(DUA {
-//!         agreement_name: "billing".to_string(),
-//!         location: "https://dua.org/agreements/v1/billing.pdf".to_string(),
-//!         agreed_dtm: 1553988607,
-//!     });
+//!		let mut dua = Vec::new();
+//!		dua.push(DUA {
+//!		    agreement_name: "billing".to_string(),
+//!		    location: "https://dua.org/agreements/v1/billing.pdf".to_string(),
+//!		    agreed_dtm: 1553988607,
+//!		});
 //!		let data = String::from(r#"{
 //!         "product": "leather coat",
 //!         "quantity": 1,
