@@ -6,7 +6,7 @@ use crate::storage::local::{LocalStorage};
 use std::thread;
 
 pub trait DaaSListenerService {
-    fn index(params: Path<Info>, duas: DUAs, body: String, req: HttpRequest) -> HttpResponse;
+    fn index(params: Path<Info>, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse;
     fn get_service_health_path() -> String {
         "/health".to_string()
     }
@@ -106,7 +106,7 @@ impl DaaSListener {
 }
 
 impl DaaSListenerService for DaaSListener {
-    fn index(params: Path<Info>, duas: DUAs, body: String, req: HttpRequest) -> HttpResponse {
+    fn index(params: Path<Info>, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse {
         let cat: String = params.category.clone();
         let subcat: String = params.subcategory.clone();
         let srcnme: String = params.source_name.clone();
