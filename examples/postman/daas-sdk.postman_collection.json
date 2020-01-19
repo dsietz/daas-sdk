@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "c34879bc-68b0-4d47-a475-2e54d0f9ffe4",
+		"_postman_id": "b4d29fad-0d7f-403b-8fae-0b52d6e3979c",
 		"name": "daas-sdk",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -19,6 +19,11 @@
 						"key": "Content-Type",
 						"name": "Content-Type",
 						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Data-Tracker-Chain",
+						"value": "W3siaWRlbnRpZmllciI6eyJkYXRhX2lkIjoib3JkZXJ+Y2xvdGhpbmd+aVN0b3JlfjE1MTUwIiwiaW5kZXgiOjAsInRpbWVzdGFtcCI6MCwiYWN0b3JfaWQiOiIifSwiaGFzaCI6IjE4NTUyODk4NTgzMDIzMDU2Njc2MDIzNjIwMzIyODU4OTI1MDU1NiIsInByZXZpb3VzX2hhc2giOiIwIiwibm9uY2UiOjV9LHsiaWRlbnRpZmllciI6eyJkYXRhX2lkIjoib3JkZXJ+Y2xvdGhpbmd+aVN0b3JlfjE1MTUwIiwiaW5kZXgiOjEsInRpbWVzdGFtcCI6MTU3ODA3MTIzOSwiYWN0b3JfaWQiOiJub3RpZmllcn5iaWxsaW5nfnJlY2VpcHR+ZW1haWwifSwiaGFzaCI6IjI5MTQ3MTk1MDE3MTgwNjM2Mjc5NTA5NzQzMTM0ODE5MTU1MTI0NyIsInByZXZpb3VzX2hhc2giOiIxODU1Mjg5ODU4MzAyMzA1NjY3NjAyMzYyMDMyMjg1ODkyNTA1NTYiLCJub25jZSI6NX1d",
 						"type": "text"
 					}
 				],
@@ -61,6 +66,11 @@
 					{
 						"key": "Data-Usage-Agreement",
 						"value": "[{\"agreement_name\":\"billing\",\"location\":\"www.dua.org/billing.pdf\",\"agreed_dtm\": 1553988607}]",
+						"type": "text"
+					},
+					{
+						"key": "Data-Tracker-Chain",
+						"value": "W3siaWRlbnRpZmllciI6eyJkYXRhX2lkIjoib3JkZXJ+Y2xvdGhpbmd+aVN0b3JlfjE1MTUwIiwiaW5kZXgiOjAsInRpbWVzdGFtcCI6MCwiYWN0b3JfaWQiOiIifSwiaGFzaCI6IjE4NTUyODk4NTgzMDIzMDU2Njc2MDIzNjIwMzIyODU4OTI1MDU1NiIsInByZXZpb3VzX2hhc2giOiIwIiwibm9uY2UiOjV9LHsiaWRlbnRpZmllciI6eyJkYXRhX2lkIjoib3JkZXJ+Y2xvdGhpbmd+aVN0b3JlfjE1MTUwIiwiaW5kZXgiOjEsInRpbWVzdGFtcCI6MTU3ODA3MTIzOSwiYWN0b3JfaWQiOiJub3RpZmllcn5iaWxsaW5nfnJlY2VpcHR+ZW1haWwifSwiaGFzaCI6IjI5MTQ3MTk1MDE3MTgwNjM2Mjc5NTA5NzQzMTM0ODE5MTU1MTI0NyIsInByZXZpb3VzX2hhc2giOiIxODU1Mjg5ODU4MzAyMzA1NjY3NjAyMzYyMDMyMjg1ODkyNTA1NTYiLCJub25jZSI6NX1d",
 						"type": "text"
 					}
 				],
