@@ -112,8 +112,14 @@ impl DaaSListenerService for DaaSListener {
         let srcnme: String = params.source_name.clone();
         let srcuid: usize = params.source_uid;
 
+        let content_type = match req.headers().get("Content-Type") {
+            Some(ct) => ct.to_str().unwrap(),
+            None => "unknown",
+        };
+
         let usr = "myself".to_string();
-        let doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), body.as_bytes().to_vec());
+        let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), body.as_bytes().to_vec());
+        doc.add_meta("content-type".to_string(), content_type.to_string());
         
         match DaaSListener::process_data(doc) {
             Ok(_d) => {
