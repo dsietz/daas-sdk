@@ -29,18 +29,21 @@ mod tests {
         let priv_key = keypair.0;
         let pub_key = keypair.1;
         let message_sent: Vec<u8> = String::from("Don't tell any one!").into_bytes();
-        let mut encrypted_data: Vec<u8>  = vec![0; 512];
+        
         let padding = Padding::PKCS1;
         
         let sender = Rsa::public_key_from_pem(&pub_key).unwrap();
-        sender.public_encrypt(&message_sent,encrypted_data.as_mut_slice(), padding); 
+        let mut encrypted_data: Vec<u8> = vec![0; 512];
+        sender.public_encrypt(&message_sent, encrypted_data.as_mut_slice(), padding).unwrap(); 
 
-        let receiver = Rsa::private_key_from_pem(&priv_key).unwrap();
-        let message_received: &mut [u8] = &mut [];
-        let message = receiver.private_decrypt(&encrypted_data, message_received, padding);
+        //let receiver = Rsa::private_key_from_pem(&priv_key).unwrap();
+        //let message_received: &mut [u8] = &mut Vec::new();
+        //let message = receiver.private_decrypt(&encrypted_data, message_received, padding);
 
-        println!("Sent: {}", String::from_utf8(message_sent.to_vec()).unwrap());
-        println!("Received: {}", String::from_utf8(message_received.to_vec()).unwrap());
+
+        //println!("Sent: {}", String::from_utf8(message_sent.to_vec()).unwrap());
+        println!("Encrypted Data: {:?}", encrypted_data);
+        //println!("Received: {}", String::from_utf8(message_received.to_vec()).unwrap());
         //assert_eq!(message_sent, message_received);
         assert!(false);
     }
