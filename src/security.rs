@@ -1,8 +1,8 @@
 use super::*;
-use crate::errors::{BadKeyPairError};
+use crate::errors::{DaaSSecurityError};
 use openssl::rsa::{Rsa, Padding};
 
-fn generate_keypair() -> Result<(Vec<u8>,Vec<u8>),BadKeyPairError>{
+fn generate_keypair() -> Result<(Vec<u8>,Vec<u8>),DaaSSecurityError>{
     let rsa = Rsa::generate(2048).unwrap();
 
     let priv_key: Vec<u8> = rsa.private_key_to_pem().unwrap();
@@ -11,6 +11,30 @@ fn generate_keypair() -> Result<(Vec<u8>,Vec<u8>),BadKeyPairError>{
     Ok((priv_key, pub_key))
 }
 
+// priv_key = the priuvate key as pem
+trait DaaSSecurityGaurd{
+    fn decrypt_data(priv_key: Vec<u8>, encrypted_data: Vec<u8>, padding: Padding) -> Result<Vec<u8>,DaaSSecurityError> {
+        let receiver = Rsa::private_key_from_pem(&priv_key).unwrap();
+        let mut message: Vec<u8> = vec![0; encrypted_data.len() as usize];
+        let message_size = receiver.private_decrypt(&encrypted_data, message.as_mut_slice(), padding).unwrap();
+
+        //count how many control NUL characters there are
+        let zero: u8 = 0;
+        let mut c: usize = 0;
+        let mut message_trimmed: Vec<u8> = Vec::new();
+        
+        for chr in message {
+            if chr.is_ascii_control() && chr == zero {
+                c = c + 1;
+            } else {
+                message_trimmed.push(chr);
+            }
+        }
+        println!("There are {} zero control characters.", c);
+
+        Ok(message_trimmed)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -35,7 +59,7 @@ mod tests {
         let sender = Rsa::public_key_from_pem(&pub_key).unwrap();
         let mut encrypted_data: Vec<u8> = vec![0; sender.size() as usize];
         sender.public_encrypt(&message_sent, encrypted_data.as_mut_slice(), padding).unwrap(); 
-
+        /*
         let receiver = Rsa::private_key_from_pem(&priv_key).unwrap();
         let mut message_received: Vec<u8> = vec![0; sender.size() as usize];
         let message_size = receiver.private_decrypt(&encrypted_data, message_received.as_mut_slice(), padding).unwrap();
@@ -53,7 +77,11 @@ mod tests {
             }
         }
         println!("There are {} zero control characters.", c);
-        
+        */
+        struct Guard {};
+        let guard = Guard {};
+        impl DaaSSecurityGaurd for guard{};
+        let message_received_trim = guard.decrypt_data(&priv_key, encrypted_data, padding);
 
         //let encrypted_data = encrypt_data_with_pubkey(&message_sent, pub_key).unwrap();
         //let message_received = decrypt_data_with_prikey(&encrypted_data, priv_key).unwrap();
