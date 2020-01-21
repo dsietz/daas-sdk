@@ -97,13 +97,27 @@ mod tests {
         let receiver = Rsa::private_key_from_pem(&priv_key).unwrap();
         let mut message_received: Vec<u8> = vec![0; sender.size() as usize];
         let message_size = receiver.private_decrypt(&encrypted_data, message_received.as_mut_slice(), padding).unwrap();
+
+        //count how many control NUL characters there are
+        let zero: u8 = 0;
+        let mut c: usize = 0;
+        let mut message_received_trim: Vec<u8> = Vec::new();
+        
+        for chr in message_received {
+            if chr.is_ascii_control() && chr == zero {
+                c = c + 1;
+            } else {
+                message_received_trim.push(chr);
+            }
+        }
+        println!("There are {} zero control characters.", c);
         
 
         //let encrypted_data = encrypt_data_with_pubkey(&message_sent, pub_key).unwrap();
         //let message_received = decrypt_data_with_prikey(&encrypted_data, priv_key).unwrap();
         println!("Sent: {}", String::from_utf8(message_sent.to_vec()).unwrap());
-        println!("Encrypted Data: {:?}", encrypted_data);
-        println!("Received: {}", String::from_utf8(message_received.to_vec()).unwrap());
-        assert_eq!(message_sent, message_received);
+        //println!("Encrypted Data: {:?}", encrypted_data);
+        println!("Received: {}", String::from_utf8(message_received_trim.to_vec()).unwrap());
+        assert_eq!(message_sent, message_received_trim);
     }
 }
