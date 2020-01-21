@@ -1,8 +1,6 @@
 use super::*;
 use crate::errors::{BadKeyPairError};
-use openssl::pkey::{Private, Public};
 use openssl::rsa::{Rsa, Padding};
-use std::cmp::max;
 
 fn generate_keypair() -> Result<(Vec<u8>,Vec<u8>),BadKeyPairError>{
     let rsa = Rsa::generate(2048).unwrap();
@@ -17,62 +15,6 @@ fn generate_keypair() -> Result<(Vec<u8>,Vec<u8>),BadKeyPairError>{
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn pad_chunk_to_size(chunk: &[u8], desired_size: usize) -> Vec<u8> {
-        let mut resized_vec = Vec::with_capacity(desired_size);
-        for &element in chunk {
-            resized_vec.push(element);
-        }
-        while resized_vec.len() < desired_size {
-            resized_vec.push(0);
-        }
-        println!(
-            "Desired Length = {}, Actual Length = {}",
-            desired_size,
-            resized_vec.len()
-        );
-        resized_vec
-    }
-
-    fn encrypt_data_with_pubkey(data: &[u8], pub_key: Vec<u8>) -> Result<Vec<u8>,usize> {
-        let data_len = data.len();
-        let public_rsa: Rsa<Public> = Rsa::public_key_from_pem(pub_key.as_slice()).unwrap();
-        let buf_len = public_rsa.size() as usize;
-        let mut buffer: Vec<u8> = vec![0; buf_len];
-        let mut encrypted_data: Vec<u8> = Vec::with_capacity(data_len);
-        println!("{}", public_rsa.size());
-        for chunk in data.chunks(buf_len) {
-            println!("Encrypting (len = {}): {:?}", chunk.len(), chunk);
-            let chunk_mod;
-            if chunk.len() < buf_len {
-                chunk_mod = pad_chunk_to_size(chunk, buf_len);
-            } else {
-                chunk_mod = Vec::from(chunk);
-            }
-            let chunk_mod = chunk_mod.as_slice();
-            println!("Encrypting (len = {}): {:?}", chunk_mod.len(), chunk_mod);
-            let enc_len = public_rsa
-                .public_encrypt(chunk_mod, buffer.as_mut_slice(), Padding::NONE)
-                .expect("Error Encrypting");
-            println!("Enc Data Len : {}", enc_len);
-            encrypted_data.extend_from_slice(buffer.as_slice());
-        }
-        Ok(encrypted_data)
-    }
-
-    fn decrypt_data_with_prikey(enc_data: &[u8], priv_key: Vec<u8>) -> Result<Vec<u8>,usize> {
-        let data_len = enc_data.len();
-        let private_rsa: Rsa<Private> = Rsa::private_key_from_pem(priv_key.as_slice()).unwrap();
-        let buf_len = private_rsa.size() as usize;
-        let mut buffer: Vec<u8> = vec![0; buf_len];
-        let mut decrypted_data: Vec<u8> = Vec::with_capacity (data_len);
-        println!("{}", private_rsa.size());
-        for chunk in enc_data.chunks(buf_len) {
-            private_rsa.private_decrypt(chunk, &mut buffer, Padding::NONE).expect("Error Decrypting");;
-            decrypted_data.extend_from_slice(buffer.as_slice());
-        }
-        Ok(decrypted_data)
-    }
 
     #[test]
     fn test_generate_keypair() {
