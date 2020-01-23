@@ -5,6 +5,7 @@ extern crate log;
 extern crate pbd;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate serde_json;
+extern crate openssl;
 extern crate actix_web;
 
 use log::*;
@@ -20,3 +21,4 @@ pub mod doc;
 pub mod eventing;
 pub mod service;
 pub mod storage;
+pub mod security;

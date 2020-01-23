@@ -4,6 +4,9 @@ use std::fmt;
 
 // struct
 #[derive(Debug, Clone)]
+pub struct BadKeyPairError;
+
+#[derive(Debug, Clone)]
 pub struct BrokerError;
 
 #[derive(Debug, Clone)]
@@ -20,6 +23,11 @@ pub enum DaaSEventingError {
     BrokerError
 }
 
+#[derive(Debug, Clone)]
+pub enum DaaSSecurityError {
+    BadKeyPairError,
+}
+
 pub enum DaaSStorageError {
     RetrieveError,
     UpsertError,
@@ -32,14 +40,20 @@ pub enum DaaSError {
     DaaSEventingError,
 }
 
-// impl
+//impl
+impl fmt::Display for BadKeyPairError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Bad key pair provided.")
+    }
+}
+impl error::Error for BadKeyPairError{}
+
 impl fmt::Display for BrokerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Unable to broker the DaaS document.")
     }
 }
 impl error::Error for BrokerError{}
-
 
 impl fmt::Display for DaaSDocError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
