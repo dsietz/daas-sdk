@@ -13,6 +13,9 @@ pub struct BrokerError;
 pub struct DaaSDocError;
 
 #[derive(Debug, Clone)]
+pub struct DecryptionError;
+
+#[derive(Debug, Clone)]
 pub struct RetrieveError;
 
 #[derive(Debug, Clone)]
@@ -26,6 +29,7 @@ pub enum DaaSEventingError {
 #[derive(Debug, Clone)]
 pub enum DaaSSecurityError {
     BadKeyPairError,
+    DecryptionError,
 }
 
 pub enum DaaSStorageError {
@@ -61,6 +65,13 @@ impl fmt::Display for DaaSDocError {
     }
 }
 impl error::Error for DaaSDocError {}
+
+impl fmt::Display for DecryptionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Unable to perform the operation on the DaaS document!")
+    }
+}
+impl error::Error for DecryptionError {}
 
 impl fmt::Display for RetrieveError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

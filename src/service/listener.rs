@@ -52,7 +52,7 @@ impl DaaSListener {
         rspns
     }
 
-    fn mark_doc_as_processed(storage: LocalStorage, mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
+    fn mark_doc_as_processed(storage: LocalStorage, doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
         let daas_id = doc._id.clone();
         
         // save the modified document
@@ -86,7 +86,7 @@ impl DaaSListener {
                 Ok(d) => {
                     // based on cofiguration, should the local document be (1) updated or (2) deleted after processes
                     match DaaSListener::mark_doc_as_processed(storage, d) {
-                        Ok(d2) => {
+                        Ok(_d2) => {
                             info!("DaaS coument {} has been successfully sent to the broker.", doc2broker._id);
                         },
                         Err(e2) => {
@@ -120,7 +120,8 @@ impl DaaSListenerService for DaaSListener {
         let usr = "myself".to_string();
         let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());
-        
+        doc.add_meta("data-tracker-chain".to_string(), tracker.serialize());
+
         match DaaSListener::process_data(doc) {
             Ok(_d) => {
                 HttpResponse::Ok()
