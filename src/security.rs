@@ -9,7 +9,7 @@ In order to use RSA encryption with larger values, typically you generate a symm
 Then the recipient decrypts the symmetric key using their private RSA key and then they decrypt the encrypted data using the decrypted symmetric key.
 RSA encryption is also much slower than AES encryption, so this yields better performance anyway.
 
-SEE ALSO: https://docs.rs/openssl/0.10.26/openssl/symm/index.html
+SEE ALSO: https://docs.rs/openssl/0.10.26/openssl/aes/index.html
 */
 
 
