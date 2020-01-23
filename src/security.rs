@@ -3,6 +3,14 @@ use crate::errors::{BadKeyPairError, DecryptionError, DaaSSecurityError};
 use std::cmp::max;
 use openssl::rsa::{Rsa, Padding};
 
+/*
+Due to the mathematics (and padding) behind RSA encryption, you can only encrypt very small values.
+In order to use RSA encryption with larger values, typically you generate a symmetric key for use with another algorithm, such as AES. Then you encrypt the data using the AES symmetric key (there is no limitation on size using a symmetric encryption algorithm) and then you RSA-encrypt just the symmetric key and transmit that. AES keys are 16-32 bytes in size so they can easily fit within the RSA-encryption limitations.
+Then the recipient decrypts the symmetric key using their private RSA key and then they decrypt the encrypted data using the decrypted symmetric key.
+RSA encryption is also much slower than AES encryption, so this yields better performance anyway.
+*/
+
+
 fn generate_keypair() -> Result<(Vec<u8>,Vec<u8>,usize),DaaSSecurityError>{
     let rsa = Rsa::generate(2048).unwrap();
     let priv_key: Vec<u8> = rsa.private_key_to_pem().unwrap();
@@ -171,7 +179,7 @@ mod tests {
     fn test_encrypt_decrypt_mp3() {
         let priv_pem = get_priv_pem();
         let pub_pem = get_pub_pem();
-        let padding = Padding::PKCS1;
+        let padding = Padding::NONE;
 
         let mut f = File::open("./tests/example_audio_clip.mp3").unwrap();
         let mut mp3 = Vec::new();
@@ -193,7 +201,6 @@ mod tests {
         }
     }    
 
-    #[ignore]
     #[test]
     fn test_encrypt_decrypt_no_padding() {
         let priv_pem = get_priv_pem();
