@@ -8,6 +8,8 @@ Due to the mathematics (and padding) behind RSA encryption, you can only encrypt
 In order to use RSA encryption with larger values, typically you generate a symmetric key for use with another algorithm, such as AES. Then you encrypt the data using the AES symmetric key (there is no limitation on size using a symmetric encryption algorithm) and then you RSA-encrypt just the symmetric key and transmit that. AES keys are 16-32 bytes in size so they can easily fit within the RSA-encryption limitations.
 Then the recipient decrypts the symmetric key using their private RSA key and then they decrypt the encrypted data using the decrypted symmetric key.
 RSA encryption is also much slower than AES encryption, so this yields better performance anyway.
+
+SEE ALSO: https://docs.rs/openssl/0.10.26/openssl/symm/index.html
 */
 
 
