@@ -2,7 +2,7 @@ use super::*;
 use crate::errors::{BadKeyPairError, DecryptionError, DaaSSecurityError};
 use std::cmp::max;
 use openssl::rsa::{Rsa, Padding};
-use openssl::symm::{encrypt, Cipher};
+use openssl::symm::{decrypt, encrypt, Cipher};
 use rand::Rng; 
 use rand::distributions::Alphanumeric;
 /*
@@ -43,6 +43,18 @@ trait DaaSSecurityGaurd{
             .collect::<String>()
             .as_bytes()
             .to_vec()
+    }
+
+    fn decrypt_data(&self, key: Vec<u8>, nonce: Option<&[u8]>, data_to_decrypt: Vec<u8>) -> Result<Vec<u8>, DaaSSecurityError> {
+        match decrypt(Cipher::aes_128_cbc(), &key, nonce, &data_to_decrypt) {
+            Ok(data) => {
+                Ok(data)
+            },
+            Err(err) => {
+                println!("{}", err);
+                Err(DaaSSecurityError::DecryptionError)
+            },
+        }
     }
 
     fn encrypt_data(&self, key: Vec<u8>, nonce: Option<&[u8]>, data_to_encrypt: Vec<u8>) -> Result<Vec<u8>, DaaSSecurityError> {
@@ -163,23 +175,34 @@ mod tests {
     }
 
     #[test]
+    fn test_decrypt_data() {
+        let guard = Guard {};
+        let key: &[u8] = &[120, 70, 69, 82, 79, 54, 69, 104, 122, 119, 49, 97, 73, 120, 120, 80];
+        let nonce: &[u8] = &[116, 85, 83, 118, 121, 112, 103, 50, 99, 101, 54, 105, 67, 54, 51, 88];
+        let message_received: &[u8] = &[89, 60, 190, 161, 62, 26, 88, 4, 100, 161, 230, 105, 14, 4, 162, 163];
+
+        match guard.decrypt_data(key.to_vec(), Some(&nonce), message_received.to_vec()) {
+            Ok(msg) => {
+                assert_eq!("_test123!# ".to_string(), String::from_utf8(msg).unwrap());
+            },
+            Err(err) => {
+                assert!(false);
+            },
+        }
+    }
+
+    #[test]
     fn test_encrypt_data() {
         let guard = Guard {};
         let key = guard.generate_symmetric_key();
         let nonce = guard.generate_nonce();
         let message_sent: Vec<u8> = String::from("_test123!# ").into_bytes();
 
-
-        //let key = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F";
-        //let nonce = b"\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07";
-
         match guard.encrypt_data(key, Some(&nonce), message_sent) {
             Ok(msg) => {
-                println!("Passed: {:?}",msg);
                 assert!(true);
             },
             Err(err) => {
-                println!("Failed: {:?}",err);
                 assert!(false);
             },
         }
