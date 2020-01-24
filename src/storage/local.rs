@@ -462,7 +462,6 @@ mod tests {
             Ok(aud) => aud,
             Err(err) => {
                 panic!("Cannot read the audio file: {}",err);
-                assert!(false);
             },
         };
 

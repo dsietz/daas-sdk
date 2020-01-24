@@ -2,6 +2,7 @@ use super::*;
 use crate::errors::{BadKeyPairError, DecryptionError, DaaSSecurityError};
 use std::cmp::max;
 use openssl::rsa::{Rsa, Padding};
+use openssl::symm::{encrypt, Cipher};
 use rand::Rng; 
 use rand::distributions::Alphanumeric;
 /*
@@ -29,12 +30,34 @@ trait DaaSSecurityGaurd{
     fn generate_symmetric_key(&self) -> Vec<u8>{
         rand::thread_rng()
             .sample_iter(&Alphanumeric)
-            .take(32)
+            .take(16)
             .collect::<String>()
             .as_bytes()
             .to_vec()
     }
 
+    fn generate_nonce(&self) -> Vec<u8>{
+        rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(16)
+            .collect::<String>()
+            .as_bytes()
+            .to_vec()
+    }
+
+    fn encrypt_data(&self, key: Vec<u8>, nonce: Option<&[u8]>, data_to_encrypt: Vec<u8>) -> Result<Vec<u8>, DaaSSecurityError> {
+        match encrypt(Cipher::aes_128_cbc(), &key, nonce, &data_to_encrypt) {
+            Ok(cipherdata) => {
+                Ok(cipherdata)
+            },
+            Err(err) => {
+                println!("{}", err);
+                Err(DaaSSecurityError::EncryptionError)
+            },
+        }
+    }
+
+    /*
     fn encrypt_data(&self, pub_key: Vec<u8>, data_to_encrypt: Vec<u8>, padding: Padding) -> Result<Vec<u8>,DaaSSecurityError> {
         let sender = match Rsa::public_key_from_pem(&pub_key){
             Ok(rsa) => rsa,
@@ -88,6 +111,7 @@ trait DaaSSecurityGaurd{
         debug!("There are {} zero control characters.", c);
         message_trimmed
     }
+    */
 }
 
 #[cfg(test)]
@@ -117,11 +141,19 @@ mod tests {
     }
 
     #[test]
+    fn test_generate_nonce() {
+        let guard = Guard {};
+        let nonce = guard.generate_nonce();
+        println!("{:?}", nonce);
+        assert_eq!(nonce.len(),16);        
+    }
+
+    #[test]
     fn test_generate_symmetric_key() {
         let guard = Guard {};
         let key = guard.generate_symmetric_key();
         println!("{:?}", key);
-        assert_eq!(key.len(),32);        
+        assert_eq!(key.len(),16);        
     }
 
     #[test]
@@ -130,6 +162,29 @@ mod tests {
         assert!(keypair.is_ok());        
     }
 
+    #[test]
+    fn test_encrypt_data() {
+        let guard = Guard {};
+        let key = guard.generate_symmetric_key();
+        let nonce = guard.generate_nonce();
+        let message_sent: Vec<u8> = String::from("_test123!# ").into_bytes();
+
+
+        //let key = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F";
+        //let nonce = b"\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07";
+
+        match guard.encrypt_data(key, Some(&nonce), message_sent) {
+            Ok(msg) => {
+                println!("Passed: {:?}",msg);
+                assert!(true);
+            },
+            Err(err) => {
+                println!("Failed: {:?}",err);
+                assert!(false);
+            },
+        }
+    }
+/*
     #[ignore]
     #[test]
     fn test_encrypt() {
@@ -252,4 +307,5 @@ mod tests {
             },
         }
     }
+*/
 }
