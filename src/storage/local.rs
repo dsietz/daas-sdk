@@ -235,7 +235,7 @@ impl LocalStorage {
         format!("{}{}{}", doc_id, DELIMITER, rev)
     }
 
-    pub fn mark_doc_as_processed(&self, mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
+    pub fn mark_doc_as_processed(&self, doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
         let mut doc = match self.get_doc_by_id(doc._id, doc._rev) {
             Ok(d) => d,
             Err(e) => {
@@ -462,7 +462,6 @@ mod tests {
             Ok(aud) => aud,
             Err(err) => {
                 panic!("Cannot read the audio file: {}",err);
-                assert!(false);
             },
         };
 
