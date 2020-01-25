@@ -1,3 +1,49 @@
+//! The `security` module provides the functionality and structures that the Data as a Service (DaaS) utilizes to enforce the Privacy by Design `Deidentification` strategy.
+//! 
+//! These security features can be implemented in two manners:
+//! 
+//! 1. Instantiating a `DaaSGuard` object and calling it's methods
+//! 2. Implementing the `DaaSSecurityGaurd` traits for your own defined structure
+//!
+//! # Examples
+//!
+//! Utilizing the DaaSGuard structure to generate a RSA keypair
+//!
+//! ```
+//! extern crate daas;
+//!
+//! use daas::security::{DaaSGuard, DaaSSecurityGaurd};
+//!
+//! fn main() {
+//!     let guard = DaaSGuard {};
+//!     let keypair = guard.generate_keypair();
+//!     assert!(keypair.is_ok());    
+//! }
+//! ```
+//! 
+//! //! Implementing the DaaSSecurityGaurd trait to generate a RSA keypair
+//!
+//! ```
+//! extern crate daas;
+//!
+//! use daas::security::{DaaSSecurityGaurd};
+//!
+//! fn main() {
+//!     struct MyStruct {}
+//!     impl MyStruct {
+//!         fn hello(&self) -> String {
+//!             "Hello World!".to_string()
+//!         }
+//!     }
+//!     impl DaaSSecurityGaurd for MyStruct {}
+//! 
+//!     let my_obj = MyStruct {};
+//!     let keypair = my_obj.generate_keypair();
+//! 
+//!     println!("{}", my_obj.hello());
+//!     assert!(keypair.is_ok());    
+//! }
+//! ```
 use super::*;
 use crate::errors::{BadKeyPairError, DecryptionError, DaaSSecurityError};
 use std::cmp::max;
@@ -16,8 +62,9 @@ RSA encryption is also much slower than AES encryption, so this yields better pe
 SEE ALSO: https://docs.rs/openssl/0.10.26/openssl/aes/index.html
 */
 
+
 // priv_key = the priuvate key as pem
-trait DaaSSecurityGaurd{
+pub trait DaaSSecurityGaurd{
     fn generate_keypair(&self) -> Result<(Vec<u8>,Vec<u8>,usize),DaaSSecurityError>{
         let rsa = Rsa::generate(2048).unwrap();
         let priv_key: Vec<u8> = rsa.private_key_to_pem().unwrap();
@@ -123,15 +170,15 @@ trait DaaSSecurityGaurd{
     }
 }
 
+pub struct DaaSGuard {}
+impl DaaSSecurityGaurd for DaaSGuard{}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::io;
     use std::io::prelude::*;
     use std::fs::File;
-
-    struct Guard {}
-    impl DaaSSecurityGaurd for Guard{}
 
     fn get_priv_pem() -> Vec<u8> {
         let mut f = File::open("./tests/keys/priv-key.pem").unwrap();
@@ -151,7 +198,7 @@ mod tests {
 
     #[test]
     fn test_generate_nonce() {
-        let guard = Guard {};
+        let guard = DaaSGuard {};
         let nonce = guard.generate_nonce();
         println!("{:?}", nonce);
         assert_eq!(nonce.len(),16);        
@@ -159,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_generate_symmetric_key() {
-        let guard = Guard {};
+        let guard = DaaSGuard {};
         let key = guard.generate_symmetric_key();
         println!("{:?}", key);
         assert_eq!(key.len(),16);        
@@ -167,14 +214,14 @@ mod tests {
 
     #[test]
     fn test_generate_keypair() {
-        let guard = Guard {};
+        let guard = DaaSGuard {};
         let keypair = guard.generate_keypair();
         assert!(keypair.is_ok());        
     }
 
     #[test]
     fn test_decrypt_data() {
-        let guard = Guard {};
+        let guard = DaaSGuard {};
         let key: &[u8] = &[120, 70, 69, 82, 79, 54, 69, 104, 122, 119, 49, 97, 73, 120, 120, 80];
         let nonce: &[u8] = &[116, 85, 83, 118, 121, 112, 103, 50, 99, 101, 54, 105, 67, 54, 51, 88];
         let message_received: &[u8] = &[89, 60, 190, 161, 62, 26, 88, 4, 100, 161, 230, 105, 14, 4, 162, 163];
@@ -191,7 +238,7 @@ mod tests {
 
     #[test]
     fn test_encrypt_data() {
-        let guard = Guard {};
+        let guard = DaaSGuard {};
         let key = guard.generate_symmetric_key();
         let nonce = guard.generate_nonce();
         let message_sent: Vec<u8> = String::from("_test123!# ").into_bytes();
@@ -208,7 +255,7 @@ mod tests {
 
     #[test]
     fn test_encrypt_decrypt_mp3() {
-        let guard = Guard {};
+        let guard = DaaSGuard {};
         let key = guard.generate_symmetric_key();
         let nonce = guard.generate_nonce();
 
@@ -243,7 +290,7 @@ mod tests {
     
     #[test]
     fn test_encrypt_decrypt_symmetric_key() {
-        let guard = Guard {};
+        let guard = DaaSGuard {};
         let keypair = guard.generate_keypair().unwrap();
         let priv_key = keypair.0;
         let pub_key = keypair.1;
