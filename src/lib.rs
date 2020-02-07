@@ -22,4 +22,3 @@ pub mod doc;
 pub mod eventing;
 pub mod service;
 pub mod storage;
-pub mod security;
