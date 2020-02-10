@@ -72,7 +72,10 @@ impl DaaSListener {
         // store a local copy so data isn't lost
         let storage = LocalStorage::new("./tests".to_string());
         let doc = match storage.upsert_daas_doc(doc) {
-            Ok(d) => d,
+            Ok(d) => {
+                info!("DaaS docoument {} has been successfully upserted.", d.clone()._id);
+                d
+            },
             Err(e) => {
                 error!("{}", e);
                 return Err(UpsertError)
@@ -87,7 +90,7 @@ impl DaaSListener {
                     // based on cofiguration, should the local document be (1) updated or (2) deleted after processes
                     match DaaSListener::mark_doc_as_processed(storage, d) {
                         Ok(_d2) => {
-                            info!("DaaS coument {} has been successfully sent to the broker.", doc2broker._id);
+                            info!("DaaS docoument {} has been successfully sent to the broker.", doc2broker._id);
                         },
                         Err(e2) => {
                             error!("Could not mark the DaaS document {} as processed. Error message: [{}]", doc2broker._id, e2);
@@ -118,9 +121,9 @@ impl DaaSListenerService for DaaSListener {
         };
 
         let usr = "myself".to_string();
-        let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), body.as_bytes().to_vec());
+        let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), tracker.clone(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());
-        doc.add_meta("data-tracker-chain".to_string(), tracker.serialize());
+        //doc.add_meta("data-tracker-chain".to_string(), tracker.serialize());
 
         match DaaSListener::process_data(doc) {
             Ok(_d) => {

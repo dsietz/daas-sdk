@@ -25,7 +25,7 @@ path = "src/lib.rs"
 maintenance = {status = "actively-developed"}
 
 [dependencies]
-env_logger = "0.6"
+env_logger = "0.7"
 futures = "0.1"
 log = "0.4"
 pbd = "0.1"

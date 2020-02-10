@@ -50,6 +50,7 @@ mod tests {
     use super::*;
     
     use pbd::dua::DUA;
+    use pbd::dtc::Tracker;
 
     fn get_dua() -> Vec<DUA>{
         let mut v = Vec::new();
@@ -61,6 +62,10 @@ mod tests {
         v
     }
 
+    fn get_dtc(src_name: String, src_uid: usize, cat: String, subcat: String) -> Tracker {
+        Tracker::new(DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), src_uid))
+    }
+
     fn get_daas_doc() -> DaaSDoc {
         let src = "iStore".to_string();
         let uid = 6000;
@@ -68,9 +73,10 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
+        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
         let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         
-        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data);
 
         doc
     }

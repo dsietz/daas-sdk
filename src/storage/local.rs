@@ -328,6 +328,7 @@ impl LocalStorage {
 mod tests {
     use super::*;
     use pbd::dua::DUA;
+    use pbd::dtc::Tracker;
 
     fn get_dua() -> Vec<DUA>{
         let mut v = Vec::new();
@@ -339,6 +340,11 @@ mod tests {
         v
     }
 
+    fn get_dtc(src_name: String, src_uid: usize, cat: String, subcat: String) -> Tracker {
+        Tracker::new(DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), src_uid))
+    }
+   
+
     fn get_daas_doc() -> DaaSDoc {
         let src = "iStore".to_string();
         let uid = 6000;
@@ -346,8 +352,9 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
+        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
         let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data);
 
         doc
     }
@@ -457,6 +464,7 @@ mod tests {
         let sub = "music".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
+        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
 
         let mut file1 = match File::open("./tests/example_audio_clip.mp3") {
             Ok(aud) => aud,
@@ -471,7 +479,7 @@ mod tests {
         // store the DaaSDoc
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tests".to_string());
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data); 
+        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data); 
         let file_name = LocalStorage::make_doc_uuid(doc._id.clone(), 0.to_string());
 
         assert!(loc.upsert_daas_doc(doc).is_ok());

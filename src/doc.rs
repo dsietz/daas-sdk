@@ -44,6 +44,7 @@ use std::collections::BTreeMap;
 use serde_json::value::*;
 use futures::Future;
 use pbd::dua::DUA;
+use pbd::dtc::Tracker;
 
 // Repesentation of a map for storing metadata about the data object
 type Metadata = BTreeMap<String, String>;
@@ -71,6 +72,8 @@ pub struct DaaSDoc {
     pub last_updated: u64,
     /// The list of Data Usage Agreements for the data represented in the DaaS Document
     pub data_usage_agreements: Vec<DUA>,
+    /// The Data Tracker Chain that represents the lineage of the DaaS Document
+    pub data_tracker: Tracker,
     // The list of metadata about the data object (key, value)
     pub meta_data: Metadata,
     // List of tags to provide context about the data object
@@ -100,6 +103,8 @@ struct DaaSDocNoRev{
     pub last_updated: u64,
     /// The list of Data Usage Agreements for the data represented in the DaaS Document
     pub data_usage_agreements: Vec<DUA>,
+    /// The Data Tracker Chain that represents the lineage of the DaaS Document
+    pub data_tracker: Tracker,
     /// The byte slice that represents the data from the data source managed by the DaaS document
     pub data_obj: Vec<u8>,
 }
@@ -147,9 +152,11 @@ impl DaaSDoc {
     ///     println!("{:?}", doc._id);
     /// }
     /// ```
-    pub fn new(src_name: String, src_uid: usize, cat: String, subcat: String, auth: String, duas: Vec<DUA>, data: Vec<u8>) -> DaaSDoc {
+    pub fn new(src_name: String, src_uid: usize, cat: String, subcat: String, auth: String, duas: Vec<DUA>, dtc: Tracker, data: Vec<u8>) -> DaaSDoc {
+        let this_id = DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), src_uid);
+
         DaaSDoc {
-            _id: DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), src_uid),
+            _id: this_id.clone(),
             _rev: None,
             source_name: src_name,
             source_uid: src_uid,
@@ -159,6 +166,7 @@ impl DaaSDoc {
             process_ind: false,
             last_updated: get_unix_now!(),
             data_usage_agreements: duas,
+            data_tracker: dtc,
             meta_data: Metadata::new(),
             tags: Vec::new(),
             data_obj: data,
@@ -420,7 +428,7 @@ impl DaaSDoc {
     /// * src_name: String - The name of the data source.</br>
     /// * src_uid: usize - The unique identifier that the data source provided.</br>
     ///
-    fn make_id(cat: String, subcat: String, src_name: String, src_uid: usize) -> String {
+    pub fn make_id(cat: String, subcat: String, src_name: String, src_uid: usize) -> String {
         format!("{}{}{}{}{}{}{}",cat, DELIMITER, subcat, DELIMITER, src_name, DELIMITER, src_uid).to_string()
     } 
 
@@ -499,6 +507,7 @@ impl DaaSDoc {
             process_ind: self.process_ind.clone(),
             last_updated: get_unix_now!(),
             data_usage_agreements: self.data_usage_agreements.clone(),
+            data_tracker: self.data_tracker.clone(),
             data_obj: self.data_obj.clone(),
         };
 
@@ -515,6 +524,20 @@ mod tests {
     use std::io::prelude::*;
     use std::fs::File;
 
+    fn get_default_daasdoc() -> DaaSDoc {
+        let src = "iStore".to_string();
+        let uid = 5000;
+        let cat = "order".to_string();
+        let sub = "clothing".to_string();
+        let auth = "istore_app".to_string();
+        let dua = get_dua();
+        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
+        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data);
+
+        doc
+    }
+
     fn get_dua() -> Vec<DUA>{
         let mut v = Vec::new();
         v.push( DUA {
@@ -524,17 +547,14 @@ mod tests {
                 });
         v
     }
+
+    fn get_dtc(src_name: String, src_uid: usize, cat: String, subcat: String) -> Tracker {
+        Tracker::new(DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), src_uid))
+    }
    
     #[test]
     fn test_has_tag_ok() {
-        let src = "iStore".to_string();
-        let uid = 5000;
-        let cat = "order".to_string();
-        let sub = "clothing".to_string();
-        let auth = "istore_app".to_string();
-        let dua = get_dua();
-        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+        let mut doc = get_default_daasdoc();
         doc.add_tag("foo".to_string());
         doc.add_tag("bar".to_string());
         
@@ -551,7 +571,7 @@ mod tests {
         let auth = "istore_app".to_string();
         let dua = get_dua();
         let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let _doc = DaaSDoc::new(src, uid, cat, sub, auth, dua, data);
+        let _doc = get_default_daasdoc();
         
         assert!(true);
     }
@@ -565,22 +585,16 @@ mod tests {
         let auth = "istore_app".to_string();
         let id = format!("{}~{}~{}~{}",cat, sub, src, uid).to_string();
         let dua = get_dua();
+        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
         let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let doc = DaaSDoc::new(src, uid, cat, sub, auth, dua, data);
+        let doc = DaaSDoc::new(src, uid, cat, sub, auth, dua, dtc, data);
         
         assert_eq!(doc._id, id);
     }
 
     #[test]
     fn test_doc_rev_empty() {
-        let src = "iStore".to_string();
-        let uid = 5000;
-        let cat = "order".to_string();
-        let sub = "clothing".to_string();
-        let auth = "istore_app".to_string();
-        let dua = get_dua();
-        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let doc = DaaSDoc::new(src, uid, cat, sub, auth, dua, data);
+        let doc = get_default_daasdoc();
         
         assert!(doc._rev.is_none());
     }
@@ -592,10 +606,9 @@ mod tests {
         let cat = "order".to_string();
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
-        let dua = get_dua();
-        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+        let doc = get_default_daasdoc();
         
+        assert_eq!(doc.author, auth);
         assert_eq!(doc.source_name, src);
         assert_eq!(doc.source_uid, uid);
         assert_eq!(doc.category, cat);
@@ -611,7 +624,8 @@ mod tests {
         let sub = "music".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-
+        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
+        
         let mut f = match File::open("./tests/example_audio_clip.mp3") {
             Ok(aud) => aud,
             Err(err) => {
@@ -622,22 +636,14 @@ mod tests {
         let mut data = Vec::new();
         f.read_to_end(&mut data).unwrap();
 
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data); 
+        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data); 
         
         assert_eq!(doc.data_obj_as_ref().len(),764176);
     } 
     
     #[test]
     fn test_doc_data_ok() {
-        let src = "iStore".to_string();
-        let uid = 5000;
-        let cat = "order".to_string();
-        let sub = "clothing".to_string();
-        let auth = "istore_app".to_string();
-        let dua = get_dua();
-        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data); 
-
+        let doc = get_default_daasdoc();
         let dat: Value = serde_json::from_str(&String::from_utf8(doc.data_obj).unwrap()).unwrap();
         
         assert_eq!(dat.get("status").unwrap(), "new");
@@ -671,14 +677,7 @@ mod tests {
 
     #[test]
     fn test_meta_data_ok() {
-        let src = "iStore".to_string();
-        let uid = 5000;
-        let cat = "order".to_string();
-        let sub = "clothing".to_string();
-        let auth = "istore_app".to_string();
-        let dua = get_dua();
-        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+        let mut doc = get_default_daasdoc();
         doc.add_meta("foo".to_string(),"bar".to_string());
         
         assert_eq!(doc.get_meta("foo".to_string()), "bar");
@@ -686,14 +685,7 @@ mod tests {
     
     #[test]
     fn test_tagging_ok() {
-        let src = "iStore".to_string();
-        let uid = 5000;
-        let cat = "order".to_string();
-        let sub = "clothing".to_string();
-        let auth = "istore_app".to_string();
-        let dua = get_dua();
-        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+        let mut doc = get_default_daasdoc();
         doc.add_tag("foo".to_string());
         doc.add_tag("bar".to_string());
         
