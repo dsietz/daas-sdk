@@ -164,7 +164,7 @@ impl DaaSDocStorage for LocalStorage {
                     return Err(RetrieveError)
                 },
             };
-        let doc = DaaSDoc::from_serialized(&serialized);
+        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
         
         Ok(doc)
     }
@@ -489,7 +489,7 @@ mod tests {
         let mut f = File::open(format!("{}/order/music/iStore/16500/{}", loc.path, file_name)).unwrap();
         let mut content = Vec::new();
         f.read_to_end(&mut content).unwrap();
-        let doc = DaaSDoc::from_serialized(&String::from_utf8(content).unwrap());
+        let doc = DaaSDoc::from_serialized(&content);
 
         // create an audio file from the DaaSDoc data object
         let mut file2 = File::create(Path::new(&format!("{}/order/music/iStore/16500/example_audio_clip.mp3", loc.path))).unwrap();
@@ -506,8 +506,8 @@ mod tests {
     fn test_upsert_bad_revision() {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tmp".to_string());
-        let serialized = r#"{"_id":"order~clothing~iStore~6000","_rev":"4","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-        let doc = DaaSDoc::from_serialized(&serialized);
+        let serialized = r#"{"_id":"order~clothing~iStore~6000","_rev":"4","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~6000","index":0,"timestamp":0,"actor_id":""},"hash":"104172868773810640267295199129422370105","previous_hash":"0","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
+        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
 
         assert!(loc.upsert_daas_doc(doc).is_err());
     }

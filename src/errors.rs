@@ -22,6 +22,9 @@ pub struct EncryptionError;
 pub struct RetrieveError;
 
 #[derive(Debug, Clone)]
+pub struct TamperedDataError;
+
+#[derive(Debug, Clone)]
 pub struct UpsertError;
 
 // enums
@@ -34,6 +37,7 @@ pub enum DaaSSecurityError {
     BadKeyPairError,
     DecryptionError,
     EncryptionError,
+    TamperedDataError,
 }
 
 pub enum DaaSStorageError {
@@ -90,6 +94,13 @@ impl fmt::Display for RetrieveError {
     }
 }
 impl error::Error for RetrieveError{}
+
+impl fmt::Display for TamperedDataError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "DaaS document rejected. Tampered data data detected.")
+    }
+}
+impl error::Error for TamperedDataError{}
 
 impl fmt::Display for UpsertError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
