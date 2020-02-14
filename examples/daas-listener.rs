@@ -1,14 +1,18 @@
 extern crate daas;
 extern crate actix_web;
 
-use daas::service::listener::{Info, DaaSListener, DaaSListenerService};
+use daas::service::listener::{DaaSListener, DaaSListenerService};
 use pbd::dua::middleware::actix::*;
-use actix_web::{web, App, HttpResponse, HttpServer};
+use pbd::dtc::middleware::actix::*;
+use actix_web::{web, App, HttpServer};
 
 fn main() {
+    env_logger::init();
+    
     HttpServer::new(
         || App::new()
             .wrap(DUAEnforcer::default())
+            .wrap(DTCEnforcer::default())
             .service(
                 web::resource(&DaaSListener::get_service_health_path()).route(web::get().to(DaaSListener::health))
             )

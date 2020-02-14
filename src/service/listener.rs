@@ -69,17 +69,32 @@ impl DaaSListener {
     }
 
     pub fn process_data(doc: DaaSDoc) -> Result<DaaSDoc, UpsertError> {
+        // validate that the data hasn't been tampered with
+        // this should be performed by the DaaSDoc object
+        match doc.data_tracker.is_valid() {
+            false => {
+                warn!("DaaS detected a tampered docoument {} and has rejected it.", doc.clone()._id);
+                return Err(UpsertError)
+            },
+            true => {
+                debug!("DaaS document linneage verified for {}", doc.clone()._id);
+            },
+        }
+
         // store a local copy so data isn't lost
         let storage = LocalStorage::new("./tests".to_string());
         let doc = match storage.upsert_daas_doc(doc) {
-            Ok(d) => d,
+            Ok(d) => {
+                info!("DaaS docoument {} has been successfully upserted.", d.clone()._id);
+                d
+            },
             Err(e) => {
                 error!("{}", e);
                 return Err(UpsertError)
             },
         };
                 
-        // start an detached thread to broker the document
+        // start a detached thread to broker the document
         let doc2broker = doc.clone();
         thread::spawn(move || {
             match DaaSListener::broker_document(doc2broker.clone()) {
@@ -87,7 +102,7 @@ impl DaaSListener {
                     // based on cofiguration, should the local document be (1) updated or (2) deleted after processes
                     match DaaSListener::mark_doc_as_processed(storage, d) {
                         Ok(_d2) => {
-                            info!("DaaS coument {} has been successfully sent to the broker.", doc2broker._id);
+                            info!("DaaS docoument {} has been successfully sent to the broker.", doc2broker._id);
                         },
                         Err(e2) => {
                             error!("Could not mark the DaaS document {} as processed. Error message: [{}]", doc2broker._id, e2);
@@ -118,9 +133,9 @@ impl DaaSListenerService for DaaSListener {
         };
 
         let usr = "myself".to_string();
-        let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), body.as_bytes().to_vec());
+        let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), tracker.clone(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());
-        doc.add_meta("data-tracker-chain".to_string(), tracker.serialize());
+        //doc.add_meta("data-tracker-chain".to_string(), tracker.serialize());
 
         match DaaSListener::process_data(doc) {
             Ok(_d) => {
@@ -145,12 +160,28 @@ mod test {
     #[test]
     fn test_process_data() {
         let _ = env_logger::builder().is_test(true).try_init();
-        let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-        let doc = DaaSDoc::from_serialized(&serialized);
+        let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~15000","index":0,"timestamp":0,"actor_id":""},"hash":"103351245680471505841311888122193174123","previous_hash":"0","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
+        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
         
         let handle = thread::spawn(move || {
             println!("Mock service running ...");
             assert!(DaaSListener::process_data(doc).is_ok());
+            thread::sleep(Duration::from_secs(10));
+            println!("Mock service stopped.");
+        });
+
+        handle.join().unwrap();
+    }
+
+    #[test]
+    fn test_process_data_tampered_with() {
+        let _ = env_logger::builder().is_test(true).try_init();
+        let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~15000","index":0,"timestamp":0,"actor_id":""},"hash":"247170281044197649349807793181887586965","previous_hash":"0","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
+        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
+        
+        let handle = thread::spawn(move || {
+            println!("Mock service running ...");
+            assert!(DaaSListener::process_data(doc).is_err());
             thread::sleep(Duration::from_secs(10));
             println!("Mock service stopped.");
         });

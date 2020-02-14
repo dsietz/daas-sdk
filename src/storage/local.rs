@@ -35,6 +35,7 @@ impl DaaSDocStorage for LocalStorage {
     /// extern crate daas;
     ///
     /// use pbd::dua::DUA;
+    /// use pbd::dtc::Tracker;
     /// use daas::doc::{DaaSDoc};
     /// use daas::storage::DaaSDocStorage;
     /// use daas::storage::local::LocalStorage;
@@ -48,9 +49,10 @@ impl DaaSDocStorage for LocalStorage {
     ///     let auth = "istore_app".to_string();     
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
+    ///     let tracker = Tracker::new(DaaSDoc::make_id(cat.clone(), sub.clone(), src.clone(), uid.clone()));
     ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
-    ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+    ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker, data);
     ///     let storage = LocalStorage::new("./tmp".to_string());
     /// 
     ///     assert!(storage.upsert_daas_doc(doc).is_ok());
@@ -164,7 +166,7 @@ impl DaaSDocStorage for LocalStorage {
                     return Err(RetrieveError)
                 },
             };
-        let doc = DaaSDoc::from_serialized(&serialized);
+        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
         
         Ok(doc)
     }
@@ -212,6 +214,7 @@ impl LocalStorage {
     }
 
     // Determines if the Daas document file exists
+    #[allow(dead_code)]
     fn doc_exists(&self, file_uuid: String) -> bool {
         println!("Searching for DaaS document {} ...", self.get_doc_path(file_uuid.clone()));
         let p = self.get_doc_path(file_uuid.clone());
@@ -328,6 +331,7 @@ impl LocalStorage {
 mod tests {
     use super::*;
     use pbd::dua::DUA;
+    use pbd::dtc::Tracker;
 
     fn get_dua() -> Vec<DUA>{
         let mut v = Vec::new();
@@ -339,6 +343,11 @@ mod tests {
         v
     }
 
+    fn get_dtc(src_name: String, src_uid: usize, cat: String, subcat: String) -> Tracker {
+        Tracker::new(DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), src_uid))
+    }
+   
+
     fn get_daas_doc() -> DaaSDoc {
         let src = "iStore".to_string();
         let uid = 6000;
@@ -346,8 +355,9 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
+        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
         let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data);
 
         doc
     }
@@ -388,7 +398,7 @@ mod tests {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tests".to_string());
         
-        let rslt = match(loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), Some("2".to_string()))) {
+        let rslt = match loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), Some("2".to_string())) {
             Err(_e) => false,
             _ => true,
         };
@@ -457,6 +467,7 @@ mod tests {
         let sub = "music".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
+        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
 
         let mut file1 = match File::open("./tests/example_audio_clip.mp3") {
             Ok(aud) => aud,
@@ -471,7 +482,7 @@ mod tests {
         // store the DaaSDoc
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tests".to_string());
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data); 
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data); 
         let file_name = LocalStorage::make_doc_uuid(doc._id.clone(), 0.to_string());
 
         assert!(loc.upsert_daas_doc(doc).is_ok());
@@ -481,7 +492,7 @@ mod tests {
         let mut f = File::open(format!("{}/order/music/iStore/16500/{}", loc.path, file_name)).unwrap();
         let mut content = Vec::new();
         f.read_to_end(&mut content).unwrap();
-        let doc = DaaSDoc::from_serialized(&String::from_utf8(content).unwrap());
+        let doc = DaaSDoc::from_serialized(&content);
 
         // create an audio file from the DaaSDoc data object
         let mut file2 = File::create(Path::new(&format!("{}/order/music/iStore/16500/example_audio_clip.mp3", loc.path))).unwrap();
@@ -498,8 +509,13 @@ mod tests {
     fn test_upsert_bad_revision() {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tmp".to_string());
-        let serialized = r#"{"_id":"order~clothing~iStore~6000","_rev":"4","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-        let doc = DaaSDoc::from_serialized(&serialized);
+        let serialized = r#"
+        {"_id":"order~clothing~iStore~6000","_rev":"4","source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,
+        "data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],
+        "data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~6000","index":0,"timestamp":0,"actor_id":""},"hash":"104172868773810640267295199129422370105","previous_hash":"0","nonce":5}]},
+        "meta_data":{},"tags":[],
+        "data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
+        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
 
         assert!(loc.upsert_daas_doc(doc).is_err());
     }
