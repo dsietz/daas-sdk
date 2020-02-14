@@ -35,6 +35,7 @@ impl DaaSDocStorage for LocalStorage {
     /// extern crate daas;
     ///
     /// use pbd::dua::DUA;
+    /// use pbd::dtc::Tracker;
     /// use daas::doc::{DaaSDoc};
     /// use daas::storage::DaaSDocStorage;
     /// use daas::storage::local::LocalStorage;
@@ -48,9 +49,10 @@ impl DaaSDocStorage for LocalStorage {
     ///     let auth = "istore_app".to_string();     
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
+    ///     let tracker = Tracker::new(DaaSDoc::make_id(cat.clone(), sub.clone(), src.clone(), uid.clone()));
     ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
-    ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+    ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker, data);
     ///     let storage = LocalStorage::new("./tmp".to_string());
     /// 
     ///     assert!(storage.upsert_daas_doc(doc).is_ok());
@@ -479,7 +481,7 @@ mod tests {
         // store the DaaSDoc
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tests".to_string());
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data); 
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data); 
         let file_name = LocalStorage::make_doc_uuid(doc._id.clone(), 0.to_string());
 
         assert!(loc.upsert_daas_doc(doc).is_ok());

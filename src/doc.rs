@@ -13,6 +13,7 @@
 //!
 //! use serde_json::value::*;
 //! use pbd::dua::DUA;
+//! use pbd::dtc::Tracker;
 //! use daas::doc::{DaaSDoc};
 //!
 //! fn main() {
@@ -27,13 +28,14 @@
 //!		    location: "https://dua.org/agreements/v1/billing.pdf".to_string(),
 //!		    agreed_dtm: 1553988607,
 //!		});
+//!     let tracker = Tracker::new(DaaSDoc::make_id(cat.clone(), sub.clone(), src.clone(), uid.clone()));
 //!		let data = String::from(r#"{
 //!         "product": "leather coat",
 //!         "quantity": 1,
 //!		    "status": "new"
 //!		}"#).as_bytes().to_vec();
 //! 
-//!		let doc = DaaSDoc::new(src, uid, cat, sub, auth, dua, data);
+//!		let doc = DaaSDoc::new(src, uid, cat, sub, auth, dua,tracker, data);
 //! 
 //!     assert_eq!(doc.source_uid, uid);
 //! }
@@ -41,10 +43,9 @@
 
 use crate::*;
 use std::collections::BTreeMap;
-use serde_json::value::*;
-use futures::Future;
 use pbd::dua::DUA;
 use pbd::dtc::Tracker;
+use serde_json::Value;
 
 // Repesentation of a map for storing metadata about the data object
 type Metadata = BTreeMap<String, String>;
@@ -134,6 +135,7 @@ impl DaaSDoc {
     ///
     /// use serde_json::value::*;
     /// use pbd::dua::DUA;
+    /// use pbd::dtc::Tracker;
     /// use daas::doc::{DaaSDoc};
     ///
     /// fn main() {
@@ -145,9 +147,10 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();     
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
+    ///     let tracker = Tracker::new(DaaSDoc::make_id(cat.clone(), sub.clone(), src.clone(), uid.clone()));
     ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
-    ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+    ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker, data);
     ///     
     ///     println!("{:?}", doc._id);
     /// }
@@ -190,6 +193,7 @@ impl DaaSDoc {
     ///
     /// use serde_json::value::*;
     /// use pbd::dua::DUA;
+    /// use pbd::dtc::Tracker;
     /// use daas::doc::{DaaSDoc};
     ///
     /// fn main() {
@@ -200,9 +204,10 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
+    ///     let tracker = Tracker::new(DaaSDoc::make_id(cat.clone(), sub.clone(), src.clone(), uid.clone()));
     ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
-    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker, data);
     ///     doc.add_meta("foo".to_string(),"bar".to_string());
     ///   
     ///     assert_eq!(doc.get_meta("foo".to_string()), "bar");
@@ -228,6 +233,7 @@ impl DaaSDoc {
     ///
     /// use serde_json::value::*;
     /// use pbd::dua::DUA;
+    /// use pbd::dtc::Tracker;
     /// use daas::doc::{DaaSDoc};
     ///
     /// fn main() {
@@ -238,9 +244,10 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
+    ///     let tracker = Tracker::new(DaaSDoc::make_id(cat.clone(), sub.clone(), src.clone(), uid.clone()));
     ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
-    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua,tracker,  data);
     ///     doc.add_tag("foo".to_string());
     ///     doc.add_tag("bar".to_string());
     ///   
@@ -263,6 +270,7 @@ impl DaaSDoc {
     ///
     /// use serde_json::value::*;
     /// use pbd::dua::DUA;
+    /// use pbd::dtc::Tracker;
     /// use daas::doc::{DaaSDoc};
     ///
     /// fn main() {
@@ -273,9 +281,10 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
+    ///     let tracker = Tracker::new(DaaSDoc::make_id(cat.clone(), sub.clone(), src.clone(), uid.clone()));
     ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
-    ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+    ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker, data);
     ///     
     ///     let dat: Value = serde_json::from_str(&String::from_utf8(doc.data_obj).unwrap()).unwrap();
     ///     assert_eq!(dat.get("status").unwrap(), "new");
@@ -299,8 +308,8 @@ impl DaaSDoc {
     /// use daas::doc::DaaSDoc;
     ///
     /// fn main() {
-    ///     let serialized = r#"{"_id":"order|clothing|iStore|5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-    ///     let doc = DaaSDoc::from_serialized(&serialized);
+    ///     let serialized = r#"{"_id":"order|clothing|iStore|5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~5000","index":0,"timestamp":0,"actor_id":""},"hash":"247170281044197649349807793181887586965","previous_hash":"0","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
+    ///     let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
   	///     
     ///     assert_eq!(doc.source_uid, 5000);
     /// }
@@ -326,6 +335,7 @@ impl DaaSDoc {
     ///
     /// use serde_json::value::*;
     /// use pbd::dua::DUA;
+    /// use pbd::dtc::Tracker;
     /// use daas::doc::{DaaSDoc};
     ///
     /// fn main() {
@@ -336,9 +346,10 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
+    ///     let tracker = Tracker::new(DaaSDoc::make_id(cat.clone(), sub.clone(), src.clone(), uid.clone()));
     ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
-    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker, data);
     ///     doc.add_meta("foowho".to_string(),"me".to_string());
     ///     doc.add_meta("foo".to_string(),"bar".to_string());
     ///   
@@ -361,6 +372,7 @@ impl DaaSDoc {
     ///
     /// use serde_json::value::*;
     /// use pbd::dua::DUA;
+    /// use pbd::dtc::Tracker;
     /// use daas::doc::{DaaSDoc};
     ///
     /// fn main() {
@@ -371,9 +383,10 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
+    ///     let tracker = Tracker::new(DaaSDoc::make_id(cat.clone(), sub.clone(), src.clone(), uid.clone()));
     ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
-    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker, data);
     ///     doc.add_tag("foo".to_string());
     ///     doc.add_tag("bar".to_string());
     ///   
@@ -396,6 +409,7 @@ impl DaaSDoc {
     ///
     /// use serde_json::value::*;
     /// use pbd::dua::DUA;
+    /// use pbd::dtc::Tracker;
     /// use daas::doc::{DaaSDoc};
     ///
     /// fn main() {
@@ -406,9 +420,10 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
+    ///     let tracker = Tracker::new(DaaSDoc::make_id(cat.clone(), sub.clone(), src.clone(), uid.clone()));
     ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
-    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker, data);
     ///     doc.add_tag("foo".to_string());
     ///     doc.add_tag("bar".to_string());
     ///   
@@ -444,6 +459,7 @@ impl DaaSDoc {
     ///
     /// use serde_json::value::*;
     /// use pbd::dua::DUA;
+    /// use pbd::dtc::Tracker;
     /// use daas::doc::{DaaSDoc};
     ///
     /// fn main() {
@@ -455,9 +471,10 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
+    ///     let tracker = Tracker::new(DaaSDoc::make_id(cat.clone(), sub.clone(), src.clone(), uid.clone()));
     ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
-    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker, data);
     ///     
     ///     println!("{:?}", doc.serialize());
     /// }
@@ -478,6 +495,7 @@ impl DaaSDoc {
     ///
     /// use serde_json::value::*;
     /// use pbd::dua::DUA;
+    /// use pbd::dtc::Tracker; 
     /// use daas::doc::{DaaSDoc};
     ///
     /// fn main() {
@@ -489,9 +507,10 @@ impl DaaSDoc {
     ///     let auth = "istore_app".to_string();
     ///     let mut dua = Vec::new();
     ///     dua.push(DUA::new("billing".to_string(),"https://dua.org/agreements/v1/billing.pdf".to_string(),1553988607));
+    ///     let tracker = Tracker::new(DaaSDoc::make_id(cat.clone(), sub.clone(), src.clone(), uid.clone()));
     ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
     ///     
-    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, data);
+    ///     let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker, data);
     ///     
     ///     println!("{:?}", doc.serialize_without_rev());
     /// }
@@ -520,7 +539,6 @@ impl DaaSDoc {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io;
     use std::io::prelude::*;
     use std::fs::File;
 
@@ -533,7 +551,7 @@ mod tests {
         let dua = get_dua();
         let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
         let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data);
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data);
 
         doc
     }
@@ -657,7 +675,12 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let id = format!("{}~{}~{}~{}",cat, sub, src, uid).to_string();
-        let serialized = r#"{"_id":"order~clothing~iStore~5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~5000","index":0,"timestamp":0,"actor_id":""},"hash":"247170281044197649349807793181887586965","previous_hash":"0","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
+        let serialized = r#"
+        {"_id":"order~clothing~iStore~5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,
+        "data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],
+        "data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~5000","index":0,"timestamp":0,"actor_id":""},"hash":"247170281044197649349807793181887586965","previous_hash":"0","nonce":5}]},
+        "meta_data":{},"tags":[],
+        "data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
         let dua = get_dua();
         let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
         let dat: Value = serde_json::from_str(&String::from_utf8(doc.data_obj).unwrap()).unwrap();
