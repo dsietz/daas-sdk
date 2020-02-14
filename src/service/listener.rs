@@ -68,18 +68,14 @@ impl DaaSListener {
         }
     }
 
-    pub fn process_data(doc: DaaSDoc) -> Result<DaaSDoc, UpsertError> {
-        // validate that the data hasn't been tampered with
-        // this should be performed by the DaaSDoc object
-        match doc.data_tracker.is_valid() {
-            false => {
-                warn!("DaaS detected a tampered docoument {} and has rejected it.", doc.clone()._id);
+    pub fn process_data(mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError> {
+        // validate the document
+        doc = match doc.validate() {
+            Ok(s) => s,
+            Err(err) =>{
                 return Err(UpsertError)
             },
-            true => {
-                debug!("DaaS document linneage verified for {}", doc.clone()._id);
-            },
-        }
+        };
 
         // store a local copy so data isn't lost
         let storage = LocalStorage::new("./tests".to_string());
@@ -135,7 +131,6 @@ impl DaaSListenerService for DaaSListener {
         let usr = "myself".to_string();
         let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), tracker.clone(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());
-        //doc.add_meta("data-tracker-chain".to_string(), tracker.serialize());
 
         match DaaSListener::process_data(doc) {
             Ok(_d) => {

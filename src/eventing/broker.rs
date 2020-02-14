@@ -6,6 +6,38 @@ use kafka::client::KafkaClient;
 use kafka::producer::{Producer, Record, RequiredAcks};
 use kafka::error::{ErrorKind, KafkaCode};
 
+pub trait DaaSKafkaProcessor {
+    fn make_topic(doc: DaaSDoc) -> String {
+        format!("{}.{}.{}", doc.category, doc.subcategory, doc.source_name)
+    }
+}
+
+pub struct DaaSKafkaBroker {
+    brokers: Vec<String>,
+}
+
+impl DaaSKafkaProcessor for DaaSKafkaBroker {}
+
+impl DaaSKafkaBroker {
+    pub fn new(brokers: Vec<String>) -> DaaSKafkaBroker {
+        DaaSKafkaBroker {
+            brokers: brokers,
+        }
+    }
+
+    pub fn default() -> DaaSKafkaBroker {
+        DaaSKafkaBroker {
+            brokers: vec!("localhost:9092".to_string()),
+        }
+    }
+}
+
+
+
+
+
+
+
 pub static KAFKA_BROKERS: &str = "localhost:9092";
 
 pub fn make_topic(doc: DaaSDoc) -> String {
