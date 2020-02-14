@@ -42,6 +42,7 @@
 //! ```
 
 use crate::*;
+use crate::errors::*;
 use std::collections::BTreeMap;
 use pbd::dua::DUA;
 use pbd::dtc::Tracker;
@@ -534,6 +535,108 @@ impl DaaSDoc {
 
         serialized
     }
+
+    /// Verifies that the DaaS document passes al the security and privacy rules.
+    ///
+    /// + Must have at least one Dat Usage Agreement
+    /// + Must have a Data Tracker Chain that has not been tampered with or replaced with a fake one
+    /// 
+    /// #Example
+    ///
+    /// ```
+    /// #[macro_use] 
+    /// extern crate serde_json;
+    /// extern crate pbd;
+    /// extern crate daas;
+    ///
+    /// use serde_json::value::*;
+    /// use pbd::dua::DUA;
+    /// use pbd::dtc::Tracker; 
+    /// use daas::doc::{DaaSDoc};
+    ///
+    /// fn main() {
+    ///     let src = "iStore".to_string();
+    ///     let uid = 5000;
+    ///     let cat = "order".to_string();
+    ///     let sub = "clothing".to_string();
+    ///     let auth = "istore_app".to_string();
+    ///     let mut dua = Vec::new();
+    ///     dua.push( DUA {
+    ///         agreement_name: "billing".to_string(),
+    ///         location: "www.dua.org/billing.pdf".to_string(),
+    ///         agreed_dtm: 1553988607,
+    ///     });
+    ///     let tracker = Tracker::from_serialized(r#"[{"identifier":{"data_id":"order~clothing~iStore~tampered","index":0,"timestamp":0,"actor_id":""},"hash":"247170281044197649349807793181887586965","previous_hash":"0","nonce":5}]"#);
+    ///     let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
+    ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker.unwrap(), data);
+    ///     
+    ///     assert!(doc.validate().is_err());
+    /// }
+    /// ```
+    pub fn validate(self) -> Result<Self, DaaSSecurityError> {
+        let mut chck: bool = false;
+        
+        chck = match self.validate_has_usage_agreement() {
+            Ok(_) => true,
+            Err(err) => {
+                return Err(err)
+            },
+        };
+
+        chck = match self.validate_matching_tracker() {
+            Ok(_) => true,
+            Err(err) => {
+                return Err(err)
+            },
+        };
+
+        chck = match self.validate_untampered_tracker() {
+            Ok(_) => true,
+            Err(err) => {
+                return Err(err)
+            },
+        };
+
+        Ok(self)
+    }
+
+    fn validate_matching_tracker(&self) -> Result<(),DaaSSecurityError> {
+        match self.data_tracker.get(0).unwrap().identifier.data_id == self._id {
+            true => Ok(()),
+            false => {
+                warn!("DaaS detected a mismatched tracker in docoument {} and has rejected it.", self._id);
+                Err(DaaSSecurityError::TamperedDataError)
+            },
+        }
+    }
+
+    fn validate_untampered_tracker(&self) -> Result<(),DaaSSecurityError> {
+        match self.data_tracker.is_valid() {
+            true => Ok(()),
+            false => {
+                warn!("DaaS detected a tampered docoument {} and has rejected it.", self._id);
+                Err(DaaSSecurityError::TamperedDataError)
+            },            
+        }
+    }
+
+    fn validate_has_usage_agreement(&self) -> Result<(),DaaSSecurityError> {
+        match self.data_usage_agreements.is_empty() {
+            false => {
+                match self.data_usage_agreements[0].agreed_dtm < get_unix_now!() {
+                    true => Ok(()),
+                    false => {
+                        warn!("DaaS detected an invalid usage agreement for docoument {} and has rejected it.", self._id);
+                        Err(DaaSSecurityError::BadAgreementError)
+                    },
+                }
+            },
+            true => {
+                warn!("DaaS detected a missing usage agreement for docoument {} and has rejected it.", self._id);
+                Err(DaaSSecurityError::MissingAgreementError)
+            },            
+        }
+    }
 }
 
 #[cfg(test)]
@@ -582,13 +685,6 @@ mod tests {
     
     #[test]
     fn test_new_obj_ok() {
-        let src = "iStore".to_string();
-        let uid = 5000;
-        let cat = "order".to_string();
-        let sub = "clothing".to_string();
-        let auth = "istore_app".to_string();
-        let dua = get_dua();
-        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         let _doc = get_default_daasdoc();
         
         assert!(true);
@@ -704,6 +800,43 @@ mod tests {
         
         assert_eq!(doc.get_meta("foo".to_string()), "bar");
     }   
+
+    #[test]
+    fn test_validate_doc_ok() {
+        let doc = get_default_daasdoc();
+        
+        assert!(doc.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_doc_tampered_dtc() {
+        let src = "iStore".to_string();
+        let uid = 5000;
+        let cat = "order".to_string();
+        let sub = "clothing".to_string();
+        let auth = "istore_app".to_string();
+        let dua = get_dua();
+        let tracker = Tracker::from_serialized(r#"[{"identifier":{"data_id":"order~clothing~iStore~tampered","index":0,"timestamp":0,"actor_id":""},"hash":"247170281044197649349807793181887586965","previous_hash":"0","nonce":5}]"#);
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker.unwrap(), data);
+        
+        assert!(doc.validate().is_err());
+    }
+
+    #[test]
+    fn test_validate_doc_fake_dtc() {
+        let src = "iStore".to_string();
+        let uid = 5000;
+        let cat = "order".to_string();
+        let sub = "clothing".to_string();
+        let auth = "istore_app".to_string();
+        let dua = get_dua();
+        let tracker = Tracker::from_serialized(r#"[{"identifier":{"data_id":"order~clothing~iStore~6000","index":0,"timestamp":0,"actor_id":""},"hash":"104172868773810640267295199129422370105","previous_hash":"0","nonce":5}]"#);
+        let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker.unwrap(), data);
+        
+        assert!(doc.validate().is_err());
+    }
     
     #[test]
     fn test_tagging_ok() {

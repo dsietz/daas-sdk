@@ -1,10 +1,10 @@
 extern crate daas;
 extern crate actix_web;
 
-use daas::service::listener::{Info, DaaSListener, DaaSListenerService};
+use daas::service::listener::{DaaSListener, DaaSListenerService};
 use pbd::dua::middleware::actix::*;
 use pbd::dtc::middleware::actix::*;
-use actix_web::{web, App, HttpResponse, HttpServer};
+use actix_web::{web, App, HttpServer};
 
 fn main() {
     env_logger::init();

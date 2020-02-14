@@ -6,6 +6,9 @@ use std::fmt;
 pub struct BadKeyPairError;
 
 #[derive(Debug, Clone)]
+pub struct BadAgreementError;
+
+#[derive(Debug, Clone)]
 pub struct BrokerError;
 
 #[derive(Debug, Clone)]
@@ -16,6 +19,9 @@ pub struct DecryptionError;
 
 #[derive(Debug, Clone)]
 pub struct EncryptionError;
+
+#[derive(Debug, Clone)]
+pub struct MissingAgreementError;
 
 #[derive(Debug, Clone)]
 pub struct RetrieveError;
@@ -34,9 +40,11 @@ pub enum DaaSEventingError {
 #[derive(Debug, Clone)]
 pub enum DaaSSecurityError {
     BadKeyPairError,
+    BadAgreementError,
     DecryptionError,
     EncryptionError,
-    TamperedDataError,
+    TamperedDataError,    
+    MissingAgreementError,
 }
 
 pub enum DaaSStorageError {
@@ -49,6 +57,7 @@ pub enum DaaSError {
     DaaSDocError,
     DaaSStorageError,
     DaaSEventingError,
+    DaaSSecurityError,
 }
 
 //impl
@@ -58,6 +67,13 @@ impl fmt::Display for BadKeyPairError {
     }
 }
 impl error::Error for BadKeyPairError{}
+
+impl fmt::Display for BadAgreementError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Invalid usage agreement for the DaaS document.")
+    }
+}
+impl error::Error for BadAgreementError{}
 
 impl fmt::Display for BrokerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -86,6 +102,16 @@ impl fmt::Display for EncryptionError {
     }
 }
 impl error::Error for EncryptionError {}
+
+
+
+impl fmt::Display for MissingAgreementError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Missing a usage agreement for the DaaS document.")
+    }
+}
+impl error::Error for MissingAgreementError{}
+
 
 impl fmt::Display for RetrieveError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
