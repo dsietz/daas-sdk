@@ -2,9 +2,11 @@ use super::*;
 use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
 use crate::doc::*;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage, Message};
+use std::sync::mpsc::{sync_channel, SyncSender, Receiver};
+use std::thread;
 
 pub trait DaaSProcessorService {
-    fn start_listening(&mut self, callback: fn(kafka::consumer::Message));
+    fn start_listening(&mut self, sender: SyncSender<Message>);
     fn stop_listening(&mut self);
 }
 
@@ -14,13 +16,13 @@ pub struct DaaSProcessor {
 }
 
 impl DaaSProcessorService for DaaSProcessor{
-    fn start_listening(&mut self, callback: fn(kafka::consumer::Message)) {
+    fn start_listening(&mut self, sender: SyncSender<Message>) {
         self.listen_ind = true;
 
         while self.listen_ind {
             for messageset in self.consumer.poll().unwrap().iter() {
                 for message in messageset.messages() {
-                    callback(Message {
+                    sender.send(Message {
                         offset: message.offset,
                         key: message.key,
                         value: message.value,
@@ -86,6 +88,7 @@ mod test {
         
         // https://stackoverflow.com/questions/26199926/how-to-terminate-or-suspend-a-rust-thread-from-another-thread
         // https://doc.rust-lang.org/std/sync/mpsc/
+        // https://doc.rust-lang.org/rust-by-example/std_misc/channels.html
         let handle = thread::spawn(move || {
             println!("Mock processor service running ...");
             data_provisioner.start_listening(|msg|{
