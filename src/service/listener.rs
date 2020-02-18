@@ -1,5 +1,5 @@
 use super::*;
-use crate::eventing::broker;
+use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
 use crate::doc::*;
 use crate::storage::{DaaSDocStorage};
 use crate::storage::local::{LocalStorage};
@@ -33,12 +33,12 @@ pub struct DaaSListener {}
 impl DaaSListener {
     fn broker_document(doc: DaaSDoc) -> Result<DaaSDoc, BrokerError>{
         let daas_id = doc._id.clone();
-        let topic = broker::make_topic(doc.clone());
-        let brokers: Vec<String> = broker::KAFKA_BROKERS.split(",").map(|s|{s.to_string()}).collect();
+        let my_broker = DaaSKafkaBroker::default();
+        let topic = DaaSKafkaBroker::make_topic(doc.clone());
         
         debug!("Sending document [{}] to broker using topic [{}]. Waiting for response...", daas_id, topic);
         
-        let rspns = match broker::produce_message(doc.clone().serialize().as_bytes(), &topic, brokers) {
+        let rspns = match DaaSKafkaBroker::broker_message(doc.clone().serialize().as_bytes(), &topic, my_broker.brokers) {
             Ok(_v) => {
                 debug!("Broker received Daas document.");
                 Ok(doc)

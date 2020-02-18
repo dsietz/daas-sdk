@@ -10,10 +10,43 @@ pub trait DaaSKafkaProcessor {
     fn make_topic(doc: DaaSDoc) -> String {
         format!("{}.{}.{}", doc.category, doc.subcategory, doc.source_name)
     }
+
+    // use the DaaSDoc as the method paramter and extract the data and key from it
+    fn broker_message<'a, 'b>(data: &'a [u8], topic: &'b str, brokers: Vec<String>) -> Result<(), kafka::error::ErrorKind> {
+        let mut client = KafkaClient::new(brokers);
+    
+        let mut attempt = 0;
+        loop {
+            attempt += 1;
+            let _ = client.load_metadata(&[topic])?;
+            if client.topics().partitions(topic).map(|p| p.len()).unwrap_or(0) > 0 { // <-- HERE
+                break;
+            } else if attempt > 2 { // try up to 3 times
+                // return some error
+                return Err(ErrorKind::Kafka(KafkaCode::UnknownTopicOrPartition));
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+    
+        let mut producer =
+            Producer::from_client(client)
+                 .with_ack_timeout(Duration::from_secs(1))
+                 .with_required_acks(RequiredAcks::One)
+                 .create()?;
+    
+        producer.send(&Record{
+            topic: topic,
+            partition: -1,
+            key: (),
+            value: data,
+        })?;
+    
+        Ok(())
+    }
 }
 
 pub struct DaaSKafkaBroker {
-    brokers: Vec<String>,
+    pub brokers: Vec<String>,
 }
 
 impl DaaSKafkaProcessor for DaaSKafkaBroker {}
@@ -32,12 +65,7 @@ impl DaaSKafkaBroker {
     }
 }
 
-
-
-
-
-
-
+/*
 pub static KAFKA_BROKERS: &str = "localhost:9092";
 
 pub fn make_topic(doc: DaaSDoc) -> String {
@@ -75,7 +103,7 @@ pub fn produce_message<'a, 'b>(data: &'a [u8], topic: &'b str, brokers: Vec<Stri
 
     Ok(())
 }
-
+*/
 
 #[cfg(test)]
 mod tests {
@@ -115,18 +143,21 @@ mod tests {
 
     #[test]
     fn test_make_topic(){
-        assert_eq!(broker::make_topic(get_daas_doc()), "order.clothing.iStore".to_string());
+        let my_broker = DaaSKafkaBroker::default();
+
+        assert_eq!(DaaSKafkaBroker::make_topic(get_daas_doc()), "order.clothing.iStore".to_string());
     }
 
-    #[ignore]
     #[test]
     fn test_send_message() {
-        match produce_message("Hello Kafka...".as_bytes(), "testTopic", vec!(KAFKA_BROKERS.to_string())) {
+        let my_broker = DaaSKafkaBroker::default();
+
+        match DaaSKafkaBroker::broker_message("Hello Kafka...".as_bytes(), "testTopic", my_broker.brokers.clone()) {
                 Ok(_v) => {
                     assert!(true);
                 },
                 Err(e) => {
-                    println!("Failed to send message to {}: {:?}", KAFKA_BROKERS.to_string(), e);
+                    println!("Failed to send message to {:?}: {:?}", my_broker.brokers, e);
                     assert!(false);
                 }
         }
