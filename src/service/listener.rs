@@ -31,14 +31,14 @@ pub struct Info {
 pub struct DaaSListener {}
 
 impl DaaSListener {
-    fn broker_document(doc: DaaSDoc) -> Result<DaaSDoc, BrokerError>{
+    fn broker_document(mut doc: DaaSDoc) -> Result<DaaSDoc, BrokerError>{
         let daas_id = doc._id.clone();
         let my_broker = DaaSKafkaBroker::default();
         let topic = DaaSKafkaBroker::make_topic(doc.clone());
         
         debug!("Sending document [{}] to broker using topic [{}]. Waiting for response...", daas_id, topic);
         
-        let rspns = match DaaSKafkaBroker::broker_message(doc.clone().serialize().as_bytes(), &topic, my_broker.brokers) {
+        let rspns = match my_broker.broker_message(&mut doc, &topic, my_broker.brokers.clone()) {
             Ok(_v) => {
                 debug!("Broker received Daas document.");
                 Ok(doc)
