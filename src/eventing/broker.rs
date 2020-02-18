@@ -11,10 +11,18 @@ pub trait DaaSKafkaProcessor {
         format!("{}.{}.{}", doc.category, doc.subcategory, doc.source_name)
     }
 
-    fn broker_message<'a, 'b>(&self, doc: &'a mut DaaSDoc, topic: &'b str, brokers: Vec<String>) -> Result<(), kafka::error::ErrorKind> {
-            let mut client = KafkaClient::new(brokers);
-    
+    fn broker_message<'a, 'b>(&self, doc: &'a mut DaaSDoc, topic: &'b str) -> Result<(), kafka::error::ErrorKind>;
+}
+
+pub struct DaaSKafkaBroker {
+    pub brokers: Vec<String>,
+}
+
+impl DaaSKafkaProcessor for DaaSKafkaBroker {
+    fn broker_message<'a, 'b>(&self, doc: &'a mut DaaSDoc, topic: &'b str) -> Result<(), kafka::error::ErrorKind> {
+        let mut client = KafkaClient::new(self.brokers.clone());
         let mut attempt = 0;
+
         loop {
             attempt += 1;
             let _ = client.load_metadata(&[topic])?;
@@ -43,12 +51,6 @@ pub trait DaaSKafkaProcessor {
         Ok(())
     }
 }
-
-pub struct DaaSKafkaBroker {
-    pub brokers: Vec<String>,
-}
-
-impl DaaSKafkaProcessor for DaaSKafkaBroker {}
 
 impl DaaSKafkaBroker {
     pub fn new(brokers: Vec<String>) -> DaaSKafkaBroker {
@@ -112,7 +114,7 @@ mod tests {
         let my_broker = DaaSKafkaBroker::default();
         let mut my_doc = get_daas_doc();
 
-        match my_broker.broker_message(&mut my_doc, "testTopic", my_broker.brokers.clone()) {
+        match my_broker.broker_message(&mut my_doc, "testTopic") {
                 Ok(_v) => {
                     assert!(true);
                 },

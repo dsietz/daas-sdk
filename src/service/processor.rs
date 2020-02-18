@@ -53,4 +53,51 @@ impl DaaSProcessor {
             listen_ind: false,
         }
     }
+
+    pub fn default() -> DaaSProcessor {
+        DaaSProcessor {
+            consumer: Consumer::from_hosts(vec!("localhost:9092".to_string()))
+                        .with_topic("genesis".to_string())
+                        .with_fallback_offset(FetchOffset::Earliest)
+                        .with_group("genesis-consumers".to_string())
+                        .with_offset_storage(GroupOffsetStorage::Kafka)
+                        .create()
+                        .unwrap(),
+            listen_ind: false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::time::Duration;
+    use std::thread;
+
+    #[test]
+    fn test_process_data() {
+        let _ = env_logger::builder().is_test(true).try_init();
+        let mut data_provisioner = DaaSProcessor::default();
+        let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~15000","index":0,"timestamp":0,"actor_id":""},"hash":"103351245680471505841311888122193174123","previous_hash":"0","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
+        let mut my_doc = DaaSDoc::from_serialized(&serialized.as_bytes());
+        let my_broker = DaaSKafkaBroker::default();
+
+        my_broker.broker_message(&mut my_doc, "genesis");
+        
+        // https://stackoverflow.com/questions/26199926/how-to-terminate-or-suspend-a-rust-thread-from-another-thread
+        // https://doc.rust-lang.org/std/sync/mpsc/
+        let handle = thread::spawn(move || {
+            println!("Mock processor service running ...");
+            data_provisioner.start_listening(|msg|{
+                let daas_doc = DaaSDoc:: from_serialized(msg.value);
+                println!("We heard: {}", daas_doc._id);
+                assert_eq!(daas_doc._id, "order~clothing~iStore~15000".to_string());
+            });            
+            data_provisioner.stop_listening();
+            println!("Mock processor service stopped.");
+        });
+
+        thread::sleep(Duration::from_secs(10));
+        handle.join().unwrap();
+    }
 }

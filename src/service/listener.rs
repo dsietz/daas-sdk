@@ -38,7 +38,7 @@ impl DaaSListener {
         
         debug!("Sending document [{}] to broker using topic [{}]. Waiting for response...", daas_id, topic);
         
-        let rspns = match my_broker.broker_message(&mut doc, &topic, my_broker.brokers.clone()) {
+        let rspns = match my_broker.broker_message(&mut doc, &topic) {
             Ok(_v) => {
                 debug!("Broker received Daas document.");
                 Ok(doc)
