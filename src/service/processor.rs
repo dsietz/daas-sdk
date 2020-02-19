@@ -2,11 +2,10 @@ use super::*;
 use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
 use crate::doc::*;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage, Message};
-use std::sync::mpsc::{sync_channel, SyncSender, Receiver};
 use std::thread;
 
 pub trait DaaSProcessorService {
-    fn start_listening(&mut self, sender: SyncSender<Message>);
+    fn start_listening(&mut self, callback: fn(kafka::consumer::Message));
     fn stop_listening(&mut self);
 }
 
@@ -16,13 +15,13 @@ pub struct DaaSProcessor {
 }
 
 impl DaaSProcessorService for DaaSProcessor{
-    fn start_listening(&mut self, sender: SyncSender<Message>) {
+    fn start_listening(&mut self, callback: fn(kafka::consumer::Message)) {
         self.listen_ind = true;
 
         while self.listen_ind {
             for messageset in self.consumer.poll().unwrap().iter() {
                 for message in messageset.messages() {
-                    sender.send(Message {
+                    callback(Message {
                         offset: message.offset,
                         key: message.key,
                         value: message.value,
@@ -86,21 +85,17 @@ mod test {
 
         my_broker.broker_message(&mut my_doc, "genesis");
         
-        // https://stackoverflow.com/questions/26199926/how-to-terminate-or-suspend-a-rust-thread-from-another-thread
-        // https://doc.rust-lang.org/std/sync/mpsc/
-        // https://doc.rust-lang.org/rust-by-example/std_misc/channels.html
         let handle = thread::spawn(move || {
             println!("Mock processor service running ...");
             data_provisioner.start_listening(|msg|{
                 let daas_doc = DaaSDoc:: from_serialized(msg.value);
-                println!("We heard: {}", daas_doc._id);
+                debug!("Received DaasDoc ID: {}", daas_doc._id);
                 assert_eq!(daas_doc._id, "order~clothing~iStore~15000".to_string());
             });            
             data_provisioner.stop_listening();
             println!("Mock processor service stopped.");
         });
 
-        thread::sleep(Duration::from_secs(10));
-        handle.join().unwrap();
+        thread::sleep(Duration::from_secs(5));
     }
 }
