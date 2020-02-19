@@ -4,8 +4,14 @@ use crate::doc::*;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage, Message};
 use std::thread;
 
+pub struct DaaSProcessorMessage<'a> {
+        offset: i64,
+        key: &'a [u8],
+        doc: DaaSDoc,
+}
+
 pub trait DaaSProcessorService {
-    fn start_listening(&mut self, callback: fn(kafka::consumer::Message));
+    fn start_listening(&mut self, callback: fn(DaaSProcessorMessage));
     fn stop_listening(&mut self);
 }
 
@@ -15,16 +21,16 @@ pub struct DaaSProcessor {
 }
 
 impl DaaSProcessorService for DaaSProcessor{
-    fn start_listening(&mut self, callback: fn(kafka::consumer::Message)) {
+    fn start_listening(&mut self, callback: fn(DaaSProcessorMessage)) {
         self.listen_ind = true;
 
         while self.listen_ind {
             for messageset in self.consumer.poll().unwrap().iter() {
                 for message in messageset.messages() {
-                    callback(Message {
+                    callback(DaaSProcessorMessage {
                         offset: message.offset,
                         key: message.key,
-                        value: message.value,
+                        doc: DaaSDoc:: from_serialized(message.value),
                     });
                 }
                 match self.consumer.consume_messageset(messageset) {
@@ -89,9 +95,7 @@ mod test {
         
         let _handle = thread::spawn(move || {
             data_provisioner.start_listening(|msg|{
-                let daas_doc = DaaSDoc:: from_serialized(msg.value);
-                debug!("Received DaasDoc ID: {}", daas_doc._id);
-                assert_eq!(daas_doc._id, "order~clothing~iStore~15000".to_string());
+                assert_eq!(msg.doc._id, "order~clothing~iStore~15000".to_string());
             });            
             data_provisioner.stop_listening();
         });
@@ -111,9 +115,7 @@ mod test {
         
         let _handle = thread::spawn(move || {
             data_provisioner.start_listening(|msg|{
-                let daas_doc = DaaSDoc:: from_serialized(msg.value);
-                debug!("Received DaasDoc ID: {}", daas_doc._id);
-                assert_eq!(daas_doc._id, "order~clothing~iStore~15000".to_string());
+                assert_eq!(msg.doc._id, "order~clothing~iStore~15000".to_string());
             });            
             data_provisioner.stop_listening();
         });

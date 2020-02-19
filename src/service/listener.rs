@@ -162,10 +162,8 @@ mod test {
         let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
         
         let handle = thread::spawn(move || {
-            println!("Mock service running ...");
             assert!(DaaSListener::process_data(doc, None).is_ok());
             thread::sleep(Duration::from_secs(10));
-            println!("Mock service stopped.");
         });
 
         handle.join().unwrap();
@@ -178,10 +176,8 @@ mod test {
         let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
         
         let handle = thread::spawn(move || {
-            println!("Mock service running ...");
             assert!(DaaSListener::process_data(doc, None).is_err());
             thread::sleep(Duration::from_secs(10));
-            println!("Mock service stopped.");
         });
 
         handle.join().unwrap();
