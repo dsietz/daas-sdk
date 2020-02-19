@@ -32,6 +32,9 @@ pub struct TamperedDataError;
 #[derive(Debug, Clone)]
 pub struct UpsertError;
 
+#[derive(Debug, Clone)]
+pub struct ValidationError;
+
 // enums
 pub enum DaaSEventingError {
     BrokerError
@@ -45,6 +48,7 @@ pub enum DaaSSecurityError {
     EncryptionError,
     TamperedDataError,    
     MissingAgreementError,
+    ValidationError,
 }
 
 pub enum DaaSStorageError {
@@ -133,3 +137,10 @@ impl fmt::Display for UpsertError {
     }
 }
 impl error::Error for UpsertError{}
+
+impl fmt::Display for ValidationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Unable to validate the DaaS document.")
+    }
+}
+impl error::Error for ValidationError{}
