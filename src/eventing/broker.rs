@@ -104,8 +104,6 @@ mod tests {
 
     #[test]
     fn test_make_topic(){
-        let my_broker = DaaSKafkaBroker::default();
-
         assert_eq!(DaaSKafkaBroker::make_topic(get_daas_doc()), "order.clothing.iStore".to_string());
     }
 

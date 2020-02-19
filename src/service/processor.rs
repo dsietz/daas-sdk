@@ -120,20 +120,21 @@ mod test {
     #[test]
     fn test_process_data() {
         let _ = env_logger::builder().is_test(true).try_init();
-        let topic = format!("{}", get_unix_now!()).to_string();
+        let my_broker = DaaSKafkaBroker::default();
+        let topic = format!("{}", get_unix_now!());        
+        
+        let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~15000","index":0,"timestamp":0,"actor_id":""},"hash":"103351245680471505841311888122193174123","previous_hash":"0","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
+        let mut my_doc = DaaSDoc::from_serialized(&serialized.as_bytes());
+        assert!(my_broker.broker_message(&mut my_doc, &topic).is_ok());
+        
+        let (tx, rx) = channel();
         let consumer = Consumer::from_hosts(vec!("localhost:9092".to_string()))
                             .with_topic(topic.clone())
                             .with_fallback_offset(FetchOffset::Earliest)
-                            .with_group(format!("{}-consumers", topic.clone()).to_string())
+                            .with_group(format!("{}-consumer", topic.clone()))
                             .with_offset_storage(GroupOffsetStorage::Kafka)
                             .create()
                             .unwrap();
-        let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~15000","index":0,"timestamp":0,"actor_id":""},"hash":"103351245680471505841311888122193174123","previous_hash":"0","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-        let mut my_doc = DaaSDoc::from_serialized(&serialized.as_bytes());
-        let my_broker = DaaSKafkaBroker::default();
-        let (tx, rx) = channel();
-
-        assert!(my_broker.broker_message(&mut my_doc, &topic).is_ok());
         
         let _handler = thread::spawn(move || {
             DaaSProcessor::start_listening(consumer, &rx, |msg|{
