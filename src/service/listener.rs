@@ -1,5 +1,5 @@
 use super::*;
-use crate::eventing::broker;
+use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
 use crate::doc::*;
 use crate::storage::{DaaSDocStorage};
 use crate::storage::local::{LocalStorage};
@@ -31,14 +31,13 @@ pub struct Info {
 pub struct DaaSListener {}
 
 impl DaaSListener {
-    fn broker_document(doc: DaaSDoc) -> Result<DaaSDoc, BrokerError>{
+    fn broker_document(mut doc: DaaSDoc, topic: String) -> Result<DaaSDoc, BrokerError>{
         let daas_id = doc._id.clone();
-        let topic = broker::make_topic(doc.clone());
-        let brokers: Vec<String> = broker::KAFKA_BROKERS.split(",").map(|s|{s.to_string()}).collect();
+        let my_broker = DaaSKafkaBroker::default();
         
         debug!("Sending document [{}] to broker using topic [{}]. Waiting for response...", daas_id, topic);
         
-        let rspns = match broker::produce_message(doc.clone().serialize().as_bytes(), &topic, brokers) {
+        let rspns = match my_broker.broker_message(&mut doc, &topic) {
             Ok(_v) => {
                 debug!("Broker received Daas document.");
                 Ok(doc)
@@ -68,18 +67,14 @@ impl DaaSListener {
         }
     }
 
-    pub fn process_data(doc: DaaSDoc) -> Result<DaaSDoc, UpsertError> {
-        // validate that the data hasn't been tampered with
-        // this should be performed by the DaaSDoc object
-        match doc.data_tracker.is_valid() {
-            false => {
-                warn!("DaaS detected a tampered docoument {} and has rejected it.", doc.clone()._id);
+    pub fn process_data(mut doc: DaaSDoc, broker_topic: Option<String>) -> Result<DaaSDoc, UpsertError> {
+        // validate the document
+        doc = match doc.validate() {
+            Ok(s) => s,
+            Err(_err) =>{
                 return Err(UpsertError)
             },
-            true => {
-                debug!("DaaS document linneage verified for {}", doc.clone()._id);
-            },
-        }
+        };
 
         // store a local copy so data isn't lost
         let storage = LocalStorage::new("./tests".to_string());
@@ -96,8 +91,12 @@ impl DaaSListener {
                 
         // start a detached thread to broker the document
         let doc2broker = doc.clone();
+        let topic = match broker_topic {
+            Some(t) => t,
+            None => DaaSKafkaBroker::make_topic(doc.clone()),
+        };
         thread::spawn(move || {
-            match DaaSListener::broker_document(doc2broker.clone()) {
+            match DaaSListener::broker_document(doc2broker.clone(), topic) {
                 Ok(d) => {
                     // based on cofiguration, should the local document be (1) updated or (2) deleted after processes
                     match DaaSListener::mark_doc_as_processed(storage, d) {
@@ -135,9 +134,8 @@ impl DaaSListenerService for DaaSListener {
         let usr = "myself".to_string();
         let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), tracker.clone(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());
-        //doc.add_meta("data-tracker-chain".to_string(), tracker.serialize());
 
-        match DaaSListener::process_data(doc) {
+        match DaaSListener::process_data(doc, Some("genesis".to_string())) {
             Ok(_d) => {
                 HttpResponse::Ok()
                     .header(http::header::CONTENT_TYPE, "application/json")
@@ -164,10 +162,8 @@ mod test {
         let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
         
         let handle = thread::spawn(move || {
-            println!("Mock service running ...");
-            assert!(DaaSListener::process_data(doc).is_ok());
+            assert!(DaaSListener::process_data(doc, None).is_ok());
             thread::sleep(Duration::from_secs(10));
-            println!("Mock service stopped.");
         });
 
         handle.join().unwrap();
@@ -180,10 +176,8 @@ mod test {
         let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
         
         let handle = thread::spawn(move || {
-            println!("Mock service running ...");
-            assert!(DaaSListener::process_data(doc).is_err());
+            assert!(DaaSListener::process_data(doc, None).is_err());
             thread::sleep(Duration::from_secs(10));
-            println!("Mock service stopped.");
         });
 
         handle.join().unwrap();

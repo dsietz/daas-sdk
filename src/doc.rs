@@ -597,7 +597,10 @@ impl DaaSDoc {
             },
         };
 
-        Ok(self)
+        match chck {
+            true => Ok(self),
+            false => return Err(DaaSSecurityError::ValidationError),
+        }
     }
 
     fn validate_matching_tracker(&self) -> Result<(),DaaSSecurityError> {
