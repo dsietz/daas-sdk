@@ -31,10 +31,9 @@ pub struct Info {
 pub struct DaaSListener {}
 
 impl DaaSListener {
-    fn broker_document(mut doc: DaaSDoc) -> Result<DaaSDoc, BrokerError>{
+    fn broker_document(mut doc: DaaSDoc, topic: String) -> Result<DaaSDoc, BrokerError>{
         let daas_id = doc._id.clone();
         let my_broker = DaaSKafkaBroker::default();
-        let topic = DaaSKafkaBroker::make_topic(doc.clone());
         
         debug!("Sending document [{}] to broker using topic [{}]. Waiting for response...", daas_id, topic);
         
@@ -68,11 +67,11 @@ impl DaaSListener {
         }
     }
 
-    pub fn process_data(mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError> {
+    pub fn process_data(mut doc: DaaSDoc, broker_topic: Option<String>) -> Result<DaaSDoc, UpsertError> {
         // validate the document
         doc = match doc.validate() {
             Ok(s) => s,
-            Err(err) =>{
+            Err(_err) =>{
                 return Err(UpsertError)
             },
         };
@@ -92,8 +91,12 @@ impl DaaSListener {
                 
         // start a detached thread to broker the document
         let doc2broker = doc.clone();
+        let topic = match broker_topic {
+            Some(t) => t,
+            None => DaaSKafkaBroker::make_topic(doc.clone()),
+        };
         thread::spawn(move || {
-            match DaaSListener::broker_document(doc2broker.clone()) {
+            match DaaSListener::broker_document(doc2broker.clone(), topic) {
                 Ok(d) => {
                     // based on cofiguration, should the local document be (1) updated or (2) deleted after processes
                     match DaaSListener::mark_doc_as_processed(storage, d) {
@@ -132,7 +135,7 @@ impl DaaSListenerService for DaaSListener {
         let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), tracker.clone(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());
 
-        match DaaSListener::process_data(doc) {
+        match DaaSListener::process_data(doc, Some("genesis".to_string())) {
             Ok(_d) => {
                 HttpResponse::Ok()
                     .header(http::header::CONTENT_TYPE, "application/json")
@@ -160,7 +163,7 @@ mod test {
         
         let handle = thread::spawn(move || {
             println!("Mock service running ...");
-            assert!(DaaSListener::process_data(doc).is_ok());
+            assert!(DaaSListener::process_data(doc, None).is_ok());
             thread::sleep(Duration::from_secs(10));
             println!("Mock service stopped.");
         });
@@ -176,7 +179,7 @@ mod test {
         
         let handle = thread::spawn(move || {
             println!("Mock service running ...");
-            assert!(DaaSListener::process_data(doc).is_err());
+            assert!(DaaSListener::process_data(doc, None).is_err());
             thread::sleep(Duration::from_secs(10));
             println!("Mock service stopped.");
         });
