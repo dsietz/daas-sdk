@@ -23,23 +23,49 @@ pub trait DaaSProcessorService {
 }
 
 pub trait DaaSGenesisProcessorService {
+    // how do we get the settings for S3 and broker passed into the function? Use json value?
     fn provision_document(mut msg: DaaSProcessorMessage) -> Result<i32, DaaSProcessingError> {
+        /*
+        ** configuration paramters
+        ** 0. AWS credentials (Env Vars)
+        ** 1. S3 bucket region
+        ** 2. S3 Bucket name
+        ** 3. Kafka host
+        ** 4. Kafka topic (static or dynamic)
+        */
+        let broker_hosts = vec!("localhost:9092".to_string());
+        let send_to_topic: Option<&str> = None;
+
         // 1. Store the DaaSDoc in S3 Bucket
-        error!("Putting document {} in S3", msg.doc._id);
+        info!("Putting document {} in S3", msg.doc._id);
         let bckt = S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string());
         let content: StreamingBody = msg.doc.serialize().into_bytes().into();
 
         match bckt.upload_file(format!("{}/{}.daas", msg.topic, msg.doc._id), content) {
             Ok(_s) => {},
             Err(err) => {
-                error!("Could not place DaasDoc {} in S3 storage. Error: {}", msg.doc._id, err);
+                error!("Could not place DaasDoc {} in S3 storage. Error: {:?}", msg.doc._id, err);
                 return Err(DaaSProcessingError::UpsertError)
             },
         }
         // 2. Broker the DaaSDoc based on dynamic topic
-        error!("Brokering document to topic {}", DaaSKafkaBroker::make_topic(msg.doc));
+        let my_broker = DaaSKafkaBroker::new(broker_hosts);
+        let topic = match send_to_topic {
+            Some(t) => t.to_string(),
+            None => {
+                DaaSKafkaBroker::make_topic(msg.doc.clone()).clone()
+            },
+        };
 
-        Ok(1)
+        match my_broker.broker_message(&mut msg.doc.clone(), &topic) {
+            Ok(_v) => {
+                return Ok(1)
+            },
+            Err(e) => {
+                error!("Failed to broker message to {:?}: {:?}", my_broker.brokers, e);
+                return Err(DaaSProcessingError::BrokerError)
+            }
+        }
     }
 
     fn run(hosts: Vec<String>, fallback_offset: FetchOffset, storage: GroupOffsetStorage) -> Sender<bool>{

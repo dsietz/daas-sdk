@@ -1,4 +1,5 @@
-use futures::Future;
+use crate::errors::daaserror::DaaSStorageError;
+//use futures::Future;
 use rusoto_core::Region;
 use rusoto_s3::{S3, S3Client, PutObjectRequest, StreamingBody};
 
@@ -110,7 +111,7 @@ impl S3BucketMngr {
         parts
     }
 
-    pub fn upload_file(self, content_key: String, content: StreamingBody) -> Result<bool, String>{
+    pub fn upload_file(self, content_key: String, content: StreamingBody) -> Result<i8, DaaSStorageError>{
         let s3_client = S3Client::new(Region::UsEast1);
         let req = PutObjectRequest {
             bucket: self.bucket,
@@ -120,9 +121,10 @@ impl S3BucketMngr {
             ..Default::default()
         };
     
-        s3_client.put_object(req).sync().expect("could not upload");
-    
-        Ok(true)
+        match s3_client.put_object(req).sync() {
+            Ok(_t) => Ok(1),
+            Err(err) => Err(DaaSStorageError::UpsertError),
+        }
     }
 }
 
@@ -154,6 +156,6 @@ mod tests {
         let content: StreamingBody = String::from("this is a message....").into_bytes().into();
 
         let rslt = bckt.upload_file("tmp/mystuff/new-record2.txt".to_string(), content).unwrap();
-        assert_eq!(rslt, true);
+        assert_eq!(rslt, 1);
     }
 }
