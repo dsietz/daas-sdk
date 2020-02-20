@@ -13,16 +13,18 @@ pub struct DaaSProcessorMessage<'a> {
 
 pub trait DaaSProcessorService {
     fn keep_listening(rx: &Receiver<bool>) -> bool;
-    fn start_listening(consumer: Consumer, rx: &Receiver<bool>, callback: fn(DaaSProcessorMessage));
+    fn start_listening(consumer: Consumer, rx: &Receiver<bool>, callback: fn(DaaSProcessorMessage) -> Result<i32, DaaSError>);
     fn stop_listening(controller: &Sender<bool>);
 }
 
 pub trait DaaSGenesisProcessorService {
-    fn provision_document(msg: DaaSProcessorMessage) {
+    fn provision_document(msg: DaaSProcessorMessage) -> Result<i32, DaaSError> {
         // 1. Store the DaaSDoc in S3 Bucket
         error!("Putting document {} in S3", msg.doc._id);
         // 2. Broker the DaaSDoc based on dynamic topic
         error!("Brokering document to topic {}", DaaSKafkaBroker::make_topic(msg.doc));
+
+        Ok(1)
     }
 
     fn run(hosts: Vec<String>, fallback_offset: FetchOffset, storage: GroupOffsetStorage) -> Sender<bool>{
@@ -62,19 +64,30 @@ impl DaaSProcessorService for DaaSProcessor{
         }
     }
     
-    fn start_listening(mut consumer: Consumer, rx: &Receiver<bool>, callback: fn(DaaSProcessorMessage)) {
+    fn start_listening(mut consumer: Consumer, rx: &Receiver<bool>, callback: fn(DaaSProcessorMessage) -> Result<i32, DaaSError>) {
         while DaaSProcessor::keep_listening(rx) {
             for messageset in consumer.poll().unwrap().iter() {
                 for message in messageset.messages() {
-                    callback(DaaSProcessorMessage {
-                        offset: message.offset,
-                        key: message.key,
-                        doc: DaaSDoc:: from_serialized(message.value),
-                    });
-                }
-                match consumer.consume_messageset(messageset) {
-                    Ok(_c) => {},
-                    Err(err) => panic!("{}",err),
+                    match callback(DaaSProcessorMessage {
+                                    offset: message.offset,
+                                    key: message.key,
+                                    doc: DaaSDoc::from_serialized(message.value),
+                                }) {
+                        Ok(_i) => {
+                            match consumer.consume_message(messageset.topic(),messageset.partition(),message.offset){
+                                Ok(_c) => {},
+                                Err(err) => panic!("{}",err),
+                            }
+                        },
+                        Err(err) => {
+                            warn!("Could not process the DaasDoc {} [topic:{}, partition:{}, offset:{}]. Error: {:?}", 
+                                    DaaSDoc::from_serialized(message.value)._id,
+                                    messageset.topic(),
+                                    messageset.partition(),
+                                    message.offset,
+                                    err);
+                        },
+                    }
                 }
             }
             consumer.commit_consumed().unwrap();
@@ -139,6 +152,7 @@ mod test {
         let _handler = thread::spawn(move || {
             DaaSProcessor::start_listening(consumer, &rx, |msg|{
                 assert_eq!(msg.doc._id, "order~clothing~iStore~15000".to_string());
+                Ok(1)
             });
         });
                     
