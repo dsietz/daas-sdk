@@ -19,13 +19,13 @@ pub struct DaaSProcessorMessage<'a> {
 
 pub trait DaaSProcessorService {
     fn keep_listening(rx: &Receiver<bool>) -> bool;
-    fn start_listening(consumer: Consumer, rx: &Receiver<bool>, callback: fn(KafkaClient, DaaSProcessorMessage) -> Result<i32, DaaSProcessingError>);
+    fn start_listening<T>(consumer: Consumer, rx: &Receiver<bool>, o: &T, callback: fn(KafkaClient, DaaSProcessorMessage, &T) -> Result<i32, DaaSProcessingError>);
     fn stop_listening(controller: &Sender<bool>);
 }
 
 pub trait DaaSGenesisProcessorService {
     // how do we get the settings for S3 and broker passed into the function? Use json value?
-    fn provision_document(mut client: KafkaClient, mut msg: DaaSProcessorMessage) -> Result<i32, DaaSProcessingError> {
+    fn provision_document<T>(client: KafkaClient, mut msg: DaaSProcessorMessage, o: &T) -> Result<i32, DaaSProcessingError> {
         /*
         ** configuration paramters
         ** 1. AWS credentials (Env Vars)
@@ -38,6 +38,7 @@ pub trait DaaSGenesisProcessorService {
         // 1. Store the DaaSDoc in S3 Bucket
         info!("Putting document {} in S3", msg.doc._id);
         let bckt = S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string());
+        //let bckt = o;
         let content: StreamingBody = msg.doc.serialize().into_bytes().into();
 
         match bckt.upload_file(format!("{}/{}.daas", msg.topic, msg.doc._id), content) {
@@ -78,7 +79,7 @@ pub trait DaaSGenesisProcessorService {
                                 .unwrap();
 
         let _handler = thread::spawn(move || {
-                DaaSProcessor::start_listening(consumer, &rx, DaasGenesisProcessor::provision_document);
+                DaaSProcessor::start_listening(consumer, &rx, &S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string()), DaasGenesisProcessor::provision_document);
             });
         
         tx
@@ -104,17 +105,18 @@ impl DaaSProcessorService for DaaSProcessor{
         }
     }
     
-    fn start_listening(mut consumer: Consumer, rx: &Receiver<bool>, callback: fn(KafkaClient, DaaSProcessorMessage) -> Result<i32, DaaSProcessingError>) {       
+    fn start_listening<T>(mut consumer: Consumer, rx: &Receiver<bool>, o: &T, callback: fn(KafkaClient, DaaSProcessorMessage, &T) -> Result<i32, DaaSProcessingError>) {       
         while DaaSProcessor::keep_listening(rx) {
             for messageset in consumer.poll().unwrap().iter() {
                 for message in messageset.messages() {
-                    match callback(KafkaClient::new(consumer.client().hosts().to_vec()),
-                                   DaaSProcessorMessage {
-                                    offset: message.offset,
-                                    key: message.key,
-                                    doc: DaaSDoc::from_serialized(message.value),
-                                    topic: messageset.topic(),
-                                }) {
+                    match callback( KafkaClient::new(consumer.client().hosts().to_vec()),
+                                    DaaSProcessorMessage {
+                                        offset: message.offset,
+                                        key: message.key,
+                                        doc: DaaSDoc::from_serialized(message.value),
+                                        topic: messageset.topic(),
+                                    },
+                                    o ) {
                         Ok(_i) => {
                             match consumer.consume_message(messageset.topic(),messageset.partition(),message.offset){
                                 Ok(_c) => {},
@@ -192,7 +194,7 @@ mod test {
                             .unwrap();
         
         let _handler = thread::spawn(move || {
-            DaaSProcessor::start_listening(consumer, &rx, |_clnt, msg|{
+            DaaSProcessor::start_listening(consumer, &rx, &(1 as i8), |_clnt, msg: DaaSProcessorMessage, _t: &i8|{
                 assert_eq!(msg.doc._id, "order~clothing~iStore~15000".to_string());
                 Ok(1)
             });
