@@ -29,12 +29,12 @@ pub trait DaaSGenesisProcessorService {
         ** configuration paramters
         ** 0. AWS credentials (Env Vars)
         ** 1. S3 bucket region
-        ** 2. S3 Bucket name
-        ** 3. Kafka host
-        ** 4. Kafka topic (static or dynamic)
+        ** 2. S3 Bucket name 
+        ** 3. Kafka host <Consumer>
+        ** 4. Kafka topic (static <Env Var> or dynamic)
         */
         let broker_hosts = vec!("localhost:9092".to_string());
-        let send_to_topic: Option<&str> = None;
+        let send_to_topic: Option<&str> = Some("newbie");
 
         // 1. Store the DaaSDoc in S3 Bucket
         info!("Putting document {} in S3", msg.doc._id);
