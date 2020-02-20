@@ -5,6 +5,7 @@ use crate::eventing::broker::{DaaSKafkaProcessor, DaaSKafkaBroker};
 use crate::storage::s3::*;
 use rusoto_core::Region;
 use rusoto_s3::{StreamingBody};
+use kafka::client::KafkaClient;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
@@ -18,22 +19,20 @@ pub struct DaaSProcessorMessage<'a> {
 
 pub trait DaaSProcessorService {
     fn keep_listening(rx: &Receiver<bool>) -> bool;
-    fn start_listening(consumer: Consumer, rx: &Receiver<bool>, callback: fn(DaaSProcessorMessage) -> Result<i32, DaaSProcessingError>);
+    fn start_listening(consumer: Consumer, rx: &Receiver<bool>, callback: fn(KafkaClient, DaaSProcessorMessage) -> Result<i32, DaaSProcessingError>);
     fn stop_listening(controller: &Sender<bool>);
 }
 
 pub trait DaaSGenesisProcessorService {
     // how do we get the settings for S3 and broker passed into the function? Use json value?
-    fn provision_document(mut msg: DaaSProcessorMessage) -> Result<i32, DaaSProcessingError> {
+    fn provision_document(mut client: KafkaClient, mut msg: DaaSProcessorMessage) -> Result<i32, DaaSProcessingError> {
         /*
         ** configuration paramters
-        ** 0. AWS credentials (Env Vars)
-        ** 1. S3 bucket region
-        ** 2. S3 Bucket name 
-        ** 3. Kafka host <Consumer>
+        ** 1. AWS credentials (Env Vars)
+        ** 2. S3 bucket region
+        ** 3. S3 Bucket name 
         ** 4. Kafka topic (static <Env Var> or dynamic)
         */
-        let broker_hosts = vec!("localhost:9092".to_string());
         let send_to_topic: Option<&str> = Some("newbie");
 
         // 1. Store the DaaSDoc in S3 Bucket
@@ -49,7 +48,7 @@ pub trait DaaSGenesisProcessorService {
             },
         }
         // 2. Broker the DaaSDoc based on dynamic topic
-        let my_broker = DaaSKafkaBroker::new(broker_hosts);
+        let my_broker = DaaSKafkaBroker::new(client.hosts().to_vec());
         let topic = match send_to_topic {
             Some(t) => t.to_string(),
             None => {
@@ -57,7 +56,7 @@ pub trait DaaSGenesisProcessorService {
             },
         };
 
-        match my_broker.broker_message(&mut msg.doc.clone(), &topic) {
+        match DaaSKafkaBroker::broker_message_with_client(client, &mut msg.doc.clone(), &topic) {
             Ok(_v) => {
                 return Ok(1)
             },
@@ -105,11 +104,12 @@ impl DaaSProcessorService for DaaSProcessor{
         }
     }
     
-    fn start_listening(mut consumer: Consumer, rx: &Receiver<bool>, callback: fn(DaaSProcessorMessage) -> Result<i32, DaaSProcessingError>) {
+    fn start_listening(mut consumer: Consumer, rx: &Receiver<bool>, callback: fn(KafkaClient, DaaSProcessorMessage) -> Result<i32, DaaSProcessingError>) {       
         while DaaSProcessor::keep_listening(rx) {
             for messageset in consumer.poll().unwrap().iter() {
                 for message in messageset.messages() {
-                    match callback(DaaSProcessorMessage {
+                    match callback(KafkaClient::new(consumer.client().hosts().to_vec()),
+                                   DaaSProcessorMessage {
                                     offset: message.offset,
                                     key: message.key,
                                     doc: DaaSDoc::from_serialized(message.value),
@@ -183,7 +183,7 @@ mod test {
         assert!(my_broker.broker_message(&mut my_doc, &topic).is_ok());
         
         let (tx, rx) = channel();
-        let consumer = Consumer::from_hosts(vec!("localhost:9092".to_string()))
+        let mut consumer = Consumer::from_hosts(vec!("localhost:9092".to_string()))
                             .with_topic(topic.clone())
                             .with_fallback_offset(FetchOffset::Earliest)
                             .with_group(format!("{}-consumer", topic.clone()))
@@ -192,7 +192,7 @@ mod test {
                             .unwrap();
         
         let _handler = thread::spawn(move || {
-            DaaSProcessor::start_listening(consumer, &rx, |msg|{
+            DaaSProcessor::start_listening(consumer, &rx, |_clnt, msg|{
                 assert_eq!(msg.doc._id, "order~clothing~iStore~15000".to_string());
                 Ok(1)
             });
