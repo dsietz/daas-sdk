@@ -1,6 +1,10 @@
 use super::*;
 use crate::doc::*;
+use crate::errors::daaserror::{DaaSProcessingError};
 use crate::eventing::broker::{DaaSKafkaProcessor, DaaSKafkaBroker};
+use crate::storage::s3::*;
+use rusoto_core::Region;
+use rusoto_s3::{StreamingBody};
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
@@ -9,18 +13,29 @@ pub struct DaaSProcessorMessage<'a> {
         offset: i64,
         key: &'a [u8],
         doc: DaaSDoc,
+        topic: &'a str,
 }
 
 pub trait DaaSProcessorService {
     fn keep_listening(rx: &Receiver<bool>) -> bool;
-    fn start_listening(consumer: Consumer, rx: &Receiver<bool>, callback: fn(DaaSProcessorMessage) -> Result<i32, DaaSError>);
+    fn start_listening(consumer: Consumer, rx: &Receiver<bool>, callback: fn(DaaSProcessorMessage) -> Result<i32, DaaSProcessingError>);
     fn stop_listening(controller: &Sender<bool>);
 }
 
 pub trait DaaSGenesisProcessorService {
-    fn provision_document(msg: DaaSProcessorMessage) -> Result<i32, DaaSError> {
+    fn provision_document(mut msg: DaaSProcessorMessage) -> Result<i32, DaaSProcessingError> {
         // 1. Store the DaaSDoc in S3 Bucket
         error!("Putting document {} in S3", msg.doc._id);
+        let bckt = S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string());
+        let content: StreamingBody = msg.doc.serialize().into_bytes().into();
+
+        match bckt.upload_file(format!("{}/{}.daas", msg.topic, msg.doc._id), content) {
+            Ok(_s) => {},
+            Err(err) => {
+                error!("Could not place DaasDoc {} in S3 storage. Error: {}", msg.doc._id, err);
+                return Err(DaaSProcessingError::UpsertError)
+            },
+        }
         // 2. Broker the DaaSDoc based on dynamic topic
         error!("Brokering document to topic {}", DaaSKafkaBroker::make_topic(msg.doc));
 
@@ -64,7 +79,7 @@ impl DaaSProcessorService for DaaSProcessor{
         }
     }
     
-    fn start_listening(mut consumer: Consumer, rx: &Receiver<bool>, callback: fn(DaaSProcessorMessage) -> Result<i32, DaaSError>) {
+    fn start_listening(mut consumer: Consumer, rx: &Receiver<bool>, callback: fn(DaaSProcessorMessage) -> Result<i32, DaaSProcessingError>) {
         while DaaSProcessor::keep_listening(rx) {
             for messageset in consumer.poll().unwrap().iter() {
                 for message in messageset.messages() {
@@ -72,6 +87,7 @@ impl DaaSProcessorService for DaaSProcessor{
                                     offset: message.offset,
                                     key: message.key,
                                     doc: DaaSDoc::from_serialized(message.value),
+                                    topic: messageset.topic(),
                                 }) {
                         Ok(_i) => {
                             match consumer.consume_message(messageset.topic(),messageset.partition(),message.offset){
