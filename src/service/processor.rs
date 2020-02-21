@@ -24,7 +24,38 @@ pub trait DaaSProcessorService {
 }
 
 pub trait DaaSGenesisProcessorService {
-    // how do we get the settings for S3 and broker passed into the function? Use json value?
+    fn default_topics(doc: &DaaSDoc) -> Vec<String> {
+        let mut topics = Vec::new();
+        topics.push(DaaSKafkaBroker::make_topic(doc.clone()));
+
+        topics
+    }
+
+    fn broker_document(client: KafkaClient, doc: DaaSDoc, send_to: Option<Vec<String>>) -> Result<i32, DaaSProcessingError>{
+        let hosts = client.hosts().to_vec();
+
+        // if a send to topic is not provided, then use the default topics
+        let topics = match send_to {
+            Some(t) => t,
+            None => {
+                let v = Self::default_topics(&doc);
+                v
+            },
+        };
+
+        for topic in topics.iter() {
+            match DaaSKafkaBroker::broker_message_with_client(KafkaClient::new(hosts.clone()), &mut doc.clone(), &topic.clone()) {
+                Ok(_v) => {},
+                Err(e) => {
+                    error!("Failed to broker message to {:?}. Error: {:?}", topic, e);
+                    return Err(DaaSProcessingError::BrokerError)
+                }
+            }
+        }
+
+        Ok(1)
+    }
+
     fn provision_document<T: S3BucketManager + Clone>(mut msg: DaaSProcessorMessage, client: Option<KafkaClient>, s3_bucket: Option<&T>) -> Result<i32, DaaSProcessingError> {
         let send_to_topic: Option<&str> = Some("newbie");
 
@@ -32,7 +63,7 @@ pub trait DaaSGenesisProcessorService {
         info!("Putting document {} in S3", msg.doc._id);
 
         let content: StreamingBody = msg.doc.serialize().into_bytes().into();
-        // perhaps use std::convert::From on T to unwrap using match
+
         match s3_bucket.unwrap().clone().upload_file(format!("{}/{}.daas", msg.topic, msg.doc._id), content) {
             Ok(_s) => {},
             Err(err) => {
@@ -44,27 +75,10 @@ pub trait DaaSGenesisProcessorService {
         // 2. Broker the DaaSDoc if a Client is provided and use dynamic topic
         match client {
             Some(clnt) => {
-                let my_broker = DaaSKafkaBroker::new(clnt.hosts().to_vec());
-                let topic = match send_to_topic {
-                    Some(t) => t.to_string(),
-                    None => {
-                        DaaSKafkaBroker::make_topic(msg.doc.clone()).clone()
-                    },
-                };
-            
-                match DaaSKafkaBroker::broker_message_with_client(clnt, &mut msg.doc.clone(), &topic) {
-                    Ok(_v) => {
-                        return Ok(1)
-                    },
-                    Err(e) => {
-                        error!("Failed to broker message to {:?}: {:?}", my_broker.brokers, e);
-                        return Err(DaaSProcessingError::BrokerError)
-                    }
-                }
+                info!("Brokering document {} ... ", msg.doc._id);
+                Self::broker_document(clnt, msg.doc.clone(), None)
             },
-            None => {
-                return Ok(1)
-            },
+            None => Ok(1),
         }        
     }
 
