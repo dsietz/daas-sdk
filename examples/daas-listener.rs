@@ -7,6 +7,7 @@ use pbd::dtc::middleware::actix::*;
 use actix_web::{web, App, HttpServer};
 
 fn main() {
+    std::env::set_var("RUST_LOG", "warn");
     env_logger::init();
     
     HttpServer::new(

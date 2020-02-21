@@ -65,6 +65,7 @@ impl DaaSDocStorage for LocalStorage {
         match doc._rev.clone() {
             Some(r) => {
                 if latest_rev != r {
+                    warn!("The DaaSDoc doesn't have the latest revision!");
                     return Err(UpsertError)
                 }
             },
@@ -77,6 +78,7 @@ impl DaaSDocStorage for LocalStorage {
                         r
                     },
                     Err(_e) => {
+                        warn!("Couldn't get the next revision for the DaaSDoc!");
                         return Err(UpsertError)
                     },
                 };

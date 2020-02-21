@@ -11,10 +11,10 @@ use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
 
 pub struct DaaSProcessorMessage<'a> {
-        offset: i64,
-        key: &'a [u8],
-        doc: DaaSDoc,
-        topic: &'a str,
+        pub offset: i64,
+        pub key: &'a [u8],
+        pub doc: DaaSDoc,
+        pub topic: &'a str,
 }
 
 pub trait DaaSProcessorService {
@@ -60,7 +60,7 @@ pub trait DaaSGenesisProcessorService {
     }
 
     fn provision_document<T: S3BucketManager + Clone>(mut msg: DaaSProcessorMessage, client: Option<KafkaClient>, s3_bucket: Option<&T>) -> Result<i32, DaaSProcessingError> {
-        let send_to_topic: Option<&str> = Some("newbie");
+        //let send_to_topic: Option<&str> = Some("newbie");
 
         // 1. Store the DaaSDoc in S3 Bucket
         info!("Putting document {} in S3", msg.doc._id);
@@ -85,13 +85,13 @@ pub trait DaaSGenesisProcessorService {
         }        
     }
 
-    fn run(hosts: Vec<String>, fallback_offset: FetchOffset, storage: GroupOffsetStorage) -> Sender<bool>{
+    fn run(hosts: Vec<String>, fallback_offset: FetchOffset, group_offset: GroupOffsetStorage, bucket: S3BucketMngr) -> Sender<bool>{
         let (tx, rx) = channel();
         let consumer = Consumer::from_hosts(hosts)
                                 .with_topic("genesis".to_string())
                                 .with_fallback_offset(fallback_offset)
                                 .with_group("genesis-consumers".to_string())
-                                .with_offset_storage(storage)
+                                .with_offset_storage(group_offset)
                                 .create()
                                 .unwrap();
 
@@ -99,7 +99,7 @@ pub trait DaaSGenesisProcessorService {
                 DaaSProcessor::start_listening(
                     consumer, 
                     &rx, 
-                    Some(&S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string())),
+                    Some(&bucket),
                     DaasGenesisProcessor::provision_document);
             });
         
@@ -177,6 +177,10 @@ mod test {
     use std::time::Duration;
     use std::thread;
 
+    fn get_bucket() -> S3BucketMngr {
+        S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string())
+    }
+
     #[test]
     fn test_genesis_processor() {
         let _ = env_logger::builder().is_test(true).try_init();
@@ -190,7 +194,7 @@ mod test {
         let mut my_doc = DaaSDoc::from_serialized(&serialized.as_bytes());
         assert!(my_broker.broker_message(&mut my_doc, "genesis").is_ok());
 
-        let stopper = DaasGenesisProcessor::run(vec!("localhost:9092".to_string()), FetchOffset::Earliest, GroupOffsetStorage::Kafka);
+        let stopper = DaasGenesisProcessor::run(vec!("localhost:9092".to_string()), FetchOffset::Earliest, GroupOffsetStorage::Kafka, get_bucket());
         thread::sleep(Duration::from_secs(5));
         DaasGenesisProcessor::stop(stopper);
     }
