@@ -33,7 +33,7 @@ fn main() {
             let mut doc = msg.doc;
             let order: Value = serde_json::from_str(&String::from_utf8(doc.data_obj_as_ref().to_vec()).unwrap()).unwrap();
 
-            println!("Order Number {} has a status of {}...", doc._id, order.get("status").unwrap());
+            println!("Order Number {} from the {} has a status of {}...", doc.source_uid, doc.source_name, order.get("status").unwrap());
             Ok(1)
         });
     });
