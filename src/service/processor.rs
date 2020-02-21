@@ -27,6 +27,9 @@ pub trait DaaSGenesisProcessorService {
     fn default_topics(doc: &DaaSDoc) -> Vec<String> {
         let mut topics = Vec::new();
         topics.push(DaaSKafkaBroker::make_topic(doc.clone()));
+        topics.push(doc.category.clone());
+        topics.push(format!("{}.{}", doc.category, doc.subcategory));
+        topics.push(doc.source_name.clone());
 
         topics
     }
