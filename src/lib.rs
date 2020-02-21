@@ -8,6 +8,8 @@ extern crate serde_json;
 extern crate rand;
 extern crate openssl;
 extern crate actix_web;
+extern crate rusoto_core;
+extern crate rusoto_s3;
 
 use log::*;
 use std::env;

@@ -56,12 +56,42 @@ pub enum DaaSStorageError {
     UpsertError,
 }
 
-#[derive(Debug)]
-pub enum DaaSError {
-    DaaSDocError,
-    DaaSStorageError,
-    DaaSEventingError,
-    DaaSSecurityError,
+
+pub mod daaserror {
+    #[derive(Debug)]
+    pub enum DaaSDocError {
+        DaaSDocError,
+        
+    }
+
+    #[derive(Debug)]
+    pub enum DaaSSecurityError {
+        BadKeyPairError,
+        BadAgreementError,
+        DecryptionError,
+        EncryptionError,
+        TamperedDataError,    
+        MissingAgreementError,
+        ValidationError,
+    }
+
+    #[derive(Debug)]
+    pub enum DaaSEventingError{
+        BrokerError
+    }
+
+    #[derive(Debug)]
+    pub enum DaaSProcessingError {
+        BrokerError,
+        RetrieveError,
+        UpsertError,
+    }
+
+    #[derive(Debug)]
+    pub enum DaaSStorageError {
+        RetrieveError,
+        UpsertError,
+    }
 }
 
 //impl

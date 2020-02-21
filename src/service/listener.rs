@@ -77,6 +77,7 @@ impl DaaSListener {
         };
 
         // store a local copy so data isn't lost
+        // Issue #23 - https://github.com/dsietz/daas-sdk/issues/23
         let storage = LocalStorage::new("./tests".to_string());
         let doc = match storage.upsert_daas_doc(doc) {
             Ok(d) => {
@@ -131,6 +132,7 @@ impl DaaSListenerService for DaaSListener {
             None => "unknown",
         };
 
+        // issue #8 - https://github.com/dsietz/daas-sdk/issues/8
         let usr = "myself".to_string();
         let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), tracker.clone(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());

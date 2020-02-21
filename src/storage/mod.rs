@@ -13,3 +13,4 @@ pub trait DaaSDocStorage {
 } 
 
 pub mod local;
+pub mod s3;

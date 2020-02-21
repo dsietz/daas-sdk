@@ -10,7 +10,7 @@ pub trait DaaSKafkaProcessor {
     fn make_topic(doc: DaaSDoc) -> String {
         format!("{}.{}.{}", doc.category, doc.subcategory, doc.source_name)
     }
-
+    fn broker_message_with_client<'a, 'b>(client: KafkaClient, doc: &'a mut DaaSDoc, topic: &'b str) -> Result<(), kafka::error::ErrorKind>;
     fn broker_message<'a, 'b>(&self, doc: &'a mut DaaSDoc, topic: &'b str) -> Result<(), kafka::error::ErrorKind>;
 }
 
@@ -19,19 +19,19 @@ pub struct DaaSKafkaBroker {
 }
 
 impl DaaSKafkaProcessor for DaaSKafkaBroker {
-    fn broker_message<'a, 'b>(&self, doc: &'a mut DaaSDoc, topic: &'b str) -> Result<(), kafka::error::ErrorKind> {
-        let mut client = KafkaClient::new(self.brokers.clone());
+    fn broker_message_with_client<'a, 'b>(mut client: KafkaClient, doc: &'a mut DaaSDoc, topic: &'b str) -> Result<(), kafka::error::ErrorKind> {
         let mut attempt = 0;
 
         loop {
             attempt += 1;
             let _ = client.load_metadata(&[topic])?;
-            if client.topics().partitions(topic).map(|p| p.len()).unwrap_or(0) > 0 { // <-- HERE
+            if client.topics().partitions(topic).map(|p| p.len()).unwrap_or(0) > 0 {
                 break;
             } else if attempt > 2 { // try up to 3 times
                 // return some error
                 return Err(ErrorKind::Kafka(KafkaCode::UnknownTopicOrPartition));
             }
+            debug!("Attempt #{} to connect to the Kafka broker...", attempt);
             thread::sleep(Duration::from_secs(1));
         }
     
@@ -49,6 +49,12 @@ impl DaaSKafkaProcessor for DaaSKafkaBroker {
         })?;
     
         Ok(())
+    }
+
+    fn broker_message<'a, 'b>(&self, doc: &'a mut DaaSDoc, topic: &'b str) -> Result<(), kafka::error::ErrorKind> {
+        let client = KafkaClient::new(self.brokers.clone());
+
+        DaaSKafkaBroker::broker_message_with_client(client, doc, topic)
     }
 }
 
