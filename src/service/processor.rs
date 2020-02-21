@@ -25,28 +25,22 @@ pub trait DaaSProcessorService {
 
 pub trait DaaSGenesisProcessorService {
     // how do we get the settings for S3 and broker passed into the function? Use json value?
-    fn provision_document<T: S3BucketManager + Clone>(mut msg: DaaSProcessorMessage, client: Option<KafkaClient>, o: Option<&T>) -> Result<i32, DaaSProcessingError> {
-        /*
-        ** configuration paramters
-        ** 1. AWS credentials (Env Vars)
-        ** 2. S3 bucket region
-        ** 3. S3 Bucket name 
-        ** 4. Kafka topic (static <Env Var> or dynamic)
-        */
+    fn provision_document<T: S3BucketManager + Clone>(mut msg: DaaSProcessorMessage, client: Option<KafkaClient>, s3_bucket: Option<&T>) -> Result<i32, DaaSProcessingError> {
         let send_to_topic: Option<&str> = Some("newbie");
 
         // 1. Store the DaaSDoc in S3 Bucket
         info!("Putting document {} in S3", msg.doc._id);
-        let bckt = o.unwrap().clone();
-        let content: StreamingBody = msg.doc.serialize().into_bytes().into();
 
-        match bckt.upload_file(format!("{}/{}.daas", msg.topic, msg.doc._id), content) {
+        let content: StreamingBody = msg.doc.serialize().into_bytes().into();
+        // perhaps use std::convert::From on T to unwrap using match
+        match s3_bucket.unwrap().clone().upload_file(format!("{}/{}.daas", msg.topic, msg.doc._id), content) {
             Ok(_s) => {},
             Err(err) => {
                 error!("Could not place DaasDoc {} in S3 storage. Error: {:?}", msg.doc._id, err);
                 return Err(DaaSProcessingError::UpsertError)
             },
         }
+
         // 2. Broker the DaaSDoc if a Client is provided and use dynamic topic
         match client {
             Some(clnt) => {
