@@ -19,13 +19,13 @@ pub struct DaaSProcessorMessage<'a> {
 
 pub trait DaaSProcessorService {
     fn keep_listening(rx: &Receiver<bool>) -> bool;
-    fn start_listening<T>(consumer: Consumer, rx: &Receiver<bool>, o: &T, callback: fn(KafkaClient, DaaSProcessorMessage, &T) -> Result<i32, DaaSProcessingError>);
+    fn start_listening<T>(consumer: Consumer, rx: &Receiver<bool>, o: Option<&T>, callback: fn(DaaSProcessorMessage, Option<KafkaClient>, Option<&T>) -> Result<i32, DaaSProcessingError>);
     fn stop_listening(controller: &Sender<bool>);
 }
 
 pub trait DaaSGenesisProcessorService {
     // how do we get the settings for S3 and broker passed into the function? Use json value?
-    fn provision_document<T>(client: KafkaClient, mut msg: DaaSProcessorMessage, o: &T) -> Result<i32, DaaSProcessingError> {
+    fn provision_document<T: S3BucketManager + Clone>(mut msg: DaaSProcessorMessage, client: Option<KafkaClient>, o: Option<&T>) -> Result<i32, DaaSProcessingError> {
         /*
         ** configuration paramters
         ** 1. AWS credentials (Env Vars)
@@ -37,8 +37,7 @@ pub trait DaaSGenesisProcessorService {
 
         // 1. Store the DaaSDoc in S3 Bucket
         info!("Putting document {} in S3", msg.doc._id);
-        let bckt = S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string());
-        //let bckt = o;
+        let bckt = o.unwrap().clone();
         let content: StreamingBody = msg.doc.serialize().into_bytes().into();
 
         match bckt.upload_file(format!("{}/{}.daas", msg.topic, msg.doc._id), content) {
@@ -48,24 +47,31 @@ pub trait DaaSGenesisProcessorService {
                 return Err(DaaSProcessingError::UpsertError)
             },
         }
-        // 2. Broker the DaaSDoc based on dynamic topic
-        let my_broker = DaaSKafkaBroker::new(client.hosts().to_vec());
-        let topic = match send_to_topic {
-            Some(t) => t.to_string(),
-            None => {
-                DaaSKafkaBroker::make_topic(msg.doc.clone()).clone()
+        // 2. Broker the DaaSDoc if a Client is provided and use dynamic topic
+        match client {
+            Some(clnt) => {
+                let my_broker = DaaSKafkaBroker::new(clnt.hosts().to_vec());
+                let topic = match send_to_topic {
+                    Some(t) => t.to_string(),
+                    None => {
+                        DaaSKafkaBroker::make_topic(msg.doc.clone()).clone()
+                    },
+                };
+            
+                match DaaSKafkaBroker::broker_message_with_client(clnt, &mut msg.doc.clone(), &topic) {
+                    Ok(_v) => {
+                        return Ok(1)
+                    },
+                    Err(e) => {
+                        error!("Failed to broker message to {:?}: {:?}", my_broker.brokers, e);
+                        return Err(DaaSProcessingError::BrokerError)
+                    }
+                }
             },
-        };
-
-        match DaaSKafkaBroker::broker_message_with_client(client, &mut msg.doc.clone(), &topic) {
-            Ok(_v) => {
+            None => {
                 return Ok(1)
             },
-            Err(e) => {
-                error!("Failed to broker message to {:?}: {:?}", my_broker.brokers, e);
-                return Err(DaaSProcessingError::BrokerError)
-            }
-        }
+        }        
     }
 
     fn run(hosts: Vec<String>, fallback_offset: FetchOffset, storage: GroupOffsetStorage) -> Sender<bool>{
@@ -79,7 +85,11 @@ pub trait DaaSGenesisProcessorService {
                                 .unwrap();
 
         let _handler = thread::spawn(move || {
-                DaaSProcessor::start_listening(consumer, &rx, &S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string()), DaasGenesisProcessor::provision_document);
+                DaaSProcessor::start_listening(
+                    consumer, 
+                    &rx, 
+                    Some(&S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string())),
+                    DaasGenesisProcessor::provision_document);
             });
         
         tx
@@ -105,17 +115,17 @@ impl DaaSProcessorService for DaaSProcessor{
         }
     }
     
-    fn start_listening<T>(mut consumer: Consumer, rx: &Receiver<bool>, o: &T, callback: fn(KafkaClient, DaaSProcessorMessage, &T) -> Result<i32, DaaSProcessingError>) {       
+    fn start_listening<T>(mut consumer: Consumer, rx: &Receiver<bool>, o: Option<&T>, callback: fn(DaaSProcessorMessage, Option<KafkaClient>, Option<&T>) -> Result<i32, DaaSProcessingError>) {       
         while DaaSProcessor::keep_listening(rx) {
             for messageset in consumer.poll().unwrap().iter() {
                 for message in messageset.messages() {
-                    match callback( KafkaClient::new(consumer.client().hosts().to_vec()),
-                                    DaaSProcessorMessage {
+                    match callback( DaaSProcessorMessage {
                                         offset: message.offset,
                                         key: message.key,
                                         doc: DaaSDoc::from_serialized(message.value),
                                         topic: messageset.topic(),
                                     },
+                                    Some(KafkaClient::new(consumer.client().hosts().to_vec())),
                                     o ) {
                         Ok(_i) => {
                             match consumer.consume_message(messageset.topic(),messageset.partition(),message.offset){
@@ -194,7 +204,7 @@ mod test {
                             .unwrap();
         
         let _handler = thread::spawn(move || {
-            DaaSProcessor::start_listening(consumer, &rx, &(1 as i8), |_clnt, msg: DaaSProcessorMessage, _t: &i8|{
+            DaaSProcessor::start_listening(consumer, &rx, Some(&(1 as i8)), |msg: DaaSProcessorMessage, _clnt: Option<KafkaClient>, _t: Option<&i8>|{
                 assert_eq!(msg.doc._id, "order~clothing~iStore~15000".to_string());
                 Ok(1)
             });

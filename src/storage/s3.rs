@@ -15,7 +15,14 @@ pub struct S3BucketMngr {
     pub arn: String,
 }
 
-impl S3BucketMngr {
+pub trait S3BucketManager {
+    fn new(region: Region, bucket_name: String) -> S3BucketMngr;
+    fn from_arn(region: Region, bucket_arn: String) -> S3BucketMngr;
+    fn parse_arn(arn: String) -> Vec<Option<String>>;
+    fn upload_file(self, content_key: String, content: StreamingBody) -> Result<i8, DaaSStorageError>;
+}
+
+impl S3BucketManager for S3BucketMngr {
     /// Constructs a S3BucketMngr object
     /// 
     /// # Arguments
@@ -29,7 +36,7 @@ impl S3BucketMngr {
     /// extern crate daas;
     ///
     /// use rusoto_core::Region;
-    /// use daas::storage::s3::S3BucketMngr;
+    /// use daas::storage::s3::{S3BucketManager, S3BucketMngr};
     ///
     /// fn main() {
     ///    let mut bckt = S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string());
@@ -37,7 +44,7 @@ impl S3BucketMngr {
     ///    assert_eq!(bckt.bucket, "iapp-daas-test-bucket".to_string());
     /// }
     /// ```
-    pub fn new(region: Region, bucket_name: String) -> S3BucketMngr {
+    fn new(region: Region, bucket_name: String) -> S3BucketMngr {
         S3BucketMngr {
             region: region,
             bucket: bucket_name.clone(),
@@ -58,7 +65,7 @@ impl S3BucketMngr {
     /// extern crate daas;
     ///
     /// use rusoto_core::Region;
-    /// use daas::storage::s3::S3BucketMngr;
+    /// use daas::storage::s3::{S3BucketManager, S3BucketMngr};
     ///
     /// fn main() {
     ///    let mut bckt = S3BucketMngr::from_arn(Region::UsEast1, "arn:aws:s3:::iapp-daas-test-bucket".to_string());
@@ -66,7 +73,7 @@ impl S3BucketMngr {
     ///    assert_eq!(bckt.bucket, "iapp-daas-test-bucket".to_string());
     /// }
     /// ```
-    pub fn from_arn(region: Region, bucket_arn: String) -> S3BucketMngr {
+    fn from_arn(region: Region, bucket_arn: String) -> S3BucketMngr {
         let mut arn = S3BucketMngr::parse_arn(bucket_arn.clone());
 		S3BucketMngr {
             region: region,
@@ -87,7 +94,7 @@ impl S3BucketMngr {
     /// ```
     /// extern crate daas;
     ///
-    /// use daas::storage::s3::S3BucketMngr;
+    /// use daas::storage::s3::{S3BucketManager, S3BucketMngr};
     ///
     /// fn main() {
     ///    let mut arn_parts = S3BucketMngr::parse_arn("arn:aws:s3:::iapp-daas-test-bucket".to_string());
@@ -95,7 +102,7 @@ impl S3BucketMngr {
     ///    assert_eq!(arn_parts[5].take().unwrap(), "iapp-daas-test-bucket".to_string());
     /// }
     /// ```
-    pub fn parse_arn(arn: String) -> Vec<Option<String>>{
+    fn parse_arn(arn: String) -> Vec<Option<String>>{
         let mut parts = Vec::new();
         
         for part in arn.split(":").collect::<Vec<&str>>().iter() {
@@ -123,7 +130,7 @@ impl S3BucketMngr {
     /// extern crate daas;
     /// extern crate rusoto_s3;
     ///
-    /// use daas::storage::s3::S3BucketMngr;
+    /// use daas::storage::s3::{S3BucketManager, S3BucketMngr};
     /// use rusoto_core::Region;
     /// use rusoto_s3::{StreamingBody};
     ///
@@ -137,7 +144,7 @@ impl S3BucketMngr {
     ///     }
     /// }
     /// ```
-    pub fn upload_file(self, content_key: String, content: StreamingBody) -> Result<i8, DaaSStorageError>{
+    fn upload_file(self, content_key: String, content: StreamingBody) -> Result<i8, DaaSStorageError>{
         let s3_client = S3Client::new(Region::UsEast1);
         let req = PutObjectRequest {
             bucket: self.bucket,
