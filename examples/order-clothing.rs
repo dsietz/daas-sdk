@@ -6,6 +6,7 @@ use std::thread;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
 use daas::service::processor::{DaaSProcessor, DaaSProcessorMessage, DaaSProcessorService};
 use std::sync::mpsc::{channel};
+use serde_json::value::Value;
 
 
 fn main() {
@@ -16,7 +17,7 @@ fn main() {
     let hosts = vec!("localhost:9092".to_string());
     let topic = "order.clothing".to_string();
 
-    // 
+    // parameters
     let (tx, rx) = channel();
     let consumer = Consumer::from_hosts(hosts)
                             .with_topic(topic.clone())
@@ -29,11 +30,10 @@ fn main() {
     // start the processor
     let _handler = thread::spawn(move || {
         DaaSProcessor::start_listening(consumer, &rx, None, |msg: DaaSProcessorMessage, _none_var , _t: Option<&i8>|{
-            //let doc = msg.doc;
-            //let _id = doc._id;
-            //let order = doc.;
+            let mut doc = msg.doc;
+            let order: Value = serde_json::from_str(&String::from_utf8(doc.data_obj_as_ref().to_vec()).unwrap()).unwrap();
 
-            println!("Order Number {} ...", msg.doc._id);
+            println!("Order Number {} has a status of {}...", doc._id, order.get("status").unwrap());
             Ok(1)
         });
     });
