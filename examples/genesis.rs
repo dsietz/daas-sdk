@@ -8,8 +8,12 @@ use kafka::consumer::{FetchOffset, GroupOffsetStorage};
 use daas::service::processor::{DaasGenesisProcessor, DaaSGenesisProcessorService};
 use daas::storage::s3::{S3BucketManager, S3BucketMngr};
 
+// NOTE: Modify the Bucket name to match your bucket
+// Credentials are read from the environment vcariables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+pub const BUCKET_NAME: &'static str = "daas-test-bucket";
+
 fn get_bucket() -> S3BucketMngr {
-    S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string())
+    S3BucketMngr::new(Region::UsEast1, BUCKET_NAME.to_string())
 }
 
 fn main() {

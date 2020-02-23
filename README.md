@@ -10,21 +10,56 @@ For software development teams who implement the [Data as a Service (DaaS)](http
 - [Data as a Service (DaaS) SDK](#data-as-a-service-daas-sdk)
   - [What's New](#whats-new)
   - [Features](#features)
+  - [Examples](#examples)
+      - [Starting the DaaS listening Service](#starting-the-daas-listening-service)
+      - [Starting the DaaS Genesis Processor](#starting-the-daas-genesis-processor)
+      - [Starting the Order Clothing Processor](#starting-the-order-clothing-processor)
+      - [Sourcing the Data](#sourcing-the-data)
   - [About](#about)
   - [How to Contribute](#how-to-contribute)
   - [License](#license)
 
 ## What's New
 
-Here's whats new in 0.0.2:
+Here's whats new in 0.0.4:
 
-1. fixed revisioning of DaaS documents for local storage
-2. modified DaaS document to manage binary content (e.g.: mp3)
+1. Data Processor service module
 
 ## Features
 
+- Privacy by Design
 - local storage of the DaaS document for listener service
 - Kafka brokering as an independent thread when processing the sourced data 
+- Processor service traits for building custom data processors
+- Out of box Geneis processor for managing the raw data and start of all data flows
+
+## Examples 
+This SDK comes with examples for each of the key services for the DaaS pattern.
+
+#### Starting the DaaS listening Service
+```
+C:\workspace\daas-sdk> cargo build --example daas-listener
+C:\workspace\daas-sdk> cd .\target\debug\examples\
+C:\workspace\daas-sdk\target\debug\examples> .\daas-listener.exe
+```
+
+#### Starting the DaaS Genesis Processor
+> NOTE: This requires that you have set up a S3 Bucket with the AWS crendentials set as environment variables
+```
+C:\workspace\daas-sdk> cargo build --example genesis
+C:\workspace\daas-sdk> cd .\target\debug\examples\
+C:\workspace\daas-sdk\target\debug\examples> .\genesis.exe
+```
+
+#### Starting the Order Clothing Processor
+```
+C:\workspace\daas-sdk> cargo build --example order-clothing
+C:\workspace\daas-sdk> cd .\target\debug\examples\
+C:\workspace\daas-sdk\target\debug\examples> .\order-clothing.exe
+```
+
+#### Sourcing the Data
+There is a `daas-sdk` Collection in the `./examples/postman` directory of this repo that contains example RESTful calls that can be imported and run from Postman.
 
 ## About
 
