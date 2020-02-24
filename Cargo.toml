@@ -42,3 +42,6 @@ rusoto_s3 = "0.42"
 version = "0.8.0"
 default-features = false
 features = ["snappy","gzip"]
+
+[dev-dependencies]
+url = "2.1.1"
