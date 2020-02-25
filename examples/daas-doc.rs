@@ -1,12 +1,31 @@
 extern crate daas;
 extern crate pbd;
 extern crate url;
+extern crate reqwest;
+extern crate base64;
 
 use daas::doc::{DaaSDoc};
 use pbd::dua::{DUA};
 use pbd::dtc::{Tracker};
 use url::Url;
-use std::convert::TryInto;
+use reqwest::blocking::{Client, Response};
+use reqwest::{Error};
+
+fn call(url: String, mut doc: DaaSDoc) {
+    /*
+    println!("URL: {}",url);
+    println!("Data-Usage-Agreement: {:?}",doc.data_usage_agreements.clone());
+    println!("Data-Tracker-Chain: {}",base64::encode(&doc.data_tracker.clone().serialize()));
+    */
+    let client = reqwest::blocking::Client::new();
+    client.post(&url)
+    .header("Content-Type", "application/json")
+    .header("Data-Usage-Agreement",format!("{:?}", doc.data_usage_agreements.clone()))
+    .header("Data-Tracker-Chain",base64::encode(&doc.data_tracker.clone().serialize()))
+    .body(doc.serialize())
+    .send()
+
+}
 
 fn main() {
     std::env::set_var("RUST_LOG", "warn");
@@ -56,7 +75,6 @@ fn main() {
     println!("Enter some date ...");
     let _p8 = std::io::stdin().read_line(&mut data).unwrap();
 
-    let mut doc = DaaSDoc::new(src_name, src_uid.parse::<usize>().unwrap(), cat, subcat, auth, duas, dtc, data.as_bytes().to_vec());
-
-    println!("{}", doc.serialize())
+    let doc = DaaSDoc::new(src_name.clone().trim().to_string(), uid, cat.clone().trim().to_string(), subcat.clone().trim().to_string(), auth.clone().trim().to_string(), duas, dtc, data.as_bytes().to_vec());
+    call(format!("http://localhost:8088/{}/{}/{}/{}", cat.clone().trim().to_string(), subcat.clone().trim().to_string(), src_name.clone().trim().to_string(), uid), doc);
 }
