@@ -10,6 +10,7 @@ use std::time::{SystemTime};
 use std::fs::{File};
 use std::io::prelude::*;
 use std::path::Path;
+use std::ffi::OsStr;
 use json::{JsonValue};
 use json::object::{Object};
 use url::Url;
@@ -17,28 +18,49 @@ use daas::doc::{DaaSDoc};
 use pbd::dua::{DUA};
 use pbd::dtc::{Tracker};
 
-fn to_jsonvalue( val: &str) -> JsonValue {
-    JsonValue::String(val.to_string())
+
+fn get_content_type(file_path: &str) -> Option<&str> {
+    Path::new(file_path)
+    .extension()
+    .and_then(OsStr::to_str)
 }
 
-fn header_value(key: &str, name: &str, value: &str) -> JsonValue {
-    let mut hdr = JsonValue::new_object();
-    hdr.insert("key", to_jsonvalue(key));
-    hdr.insert("name", to_jsonvalue(name));
-    hdr.insert("value", to_jsonvalue(value));
-    hdr.insert("type", to_jsonvalue("text"));
+fn gen_info(url: Url) -> JsonValue {
+    let mut info = JsonValue::new_object();
 
-    hdr
+    info.insert("_postman_id", to_jsonvalue("c34879bc-68b0-4d47-a475-2e54d0f9ffe4"));
+    info.insert("name", to_jsonvalue(&url.as_str()));
+    info.insert("schema", to_jsonvalue("https://schema.getpostman.com/json/collection/v2.1.0/collection.json"));
+    
+    info
 }
 
 fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Result<String, std::io::Error>{
-    let mut collection = JsonValue::new_object();
-    let mut info = JsonValue::new_object();
-    let mut item = JsonValue::new_array();
-    info.insert("_postman_id", to_jsonvalue("c34879bc-68b0-4d47-a475-2e54d0f9ffe4"));
-    info.insert("name", to_jsonvalue(&url.as_str()));
-	info.insert("schema", to_jsonvalue("https://schema.getpostman.com/json/collection/v2.1.0/collection.json"));
+    //body
+    let mut body = JsonValue::new_object();
+    body.insert("mode", to_jsonvalue("raw"));
+    let mut upload_file = match File::create(file_path) {
+        Ok(f) => f,
+        Err(err) => {
+            return Err(err);
+        }, 
+    };
+    let mut data = Vec::new();
+    match upload_file.read_to_end(&mut data){
+        Ok(_sz) => {},
+        Err(err) => {
+            return Err(err)
+        },
+    };
+    body.insert("raw", data);
+    body.insert("options",json::parse(r#"{"raw":{"language":"text"}}"#).unwrap());
 
+    
+
+    let mut collection = JsonValue::new_object();
+
+
+    let mut item = JsonValue::new_array();
     let mut itm = JsonValue::new_object();
     itm.insert("name", to_jsonvalue(&url.path()));
     
@@ -46,20 +68,13 @@ fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Resul
 
     // headers
     let mut header = JsonValue::new_array();
-    let hdr0 = header_value("Content-Type", "Content-Type", "application/octet-stream");
+    let hdr0 = header_value("Content-Type", "Content-Type", get_content_type(file_path).unwrap());
     let hdr1 = header_value("Data-Usage-Agreement", "Data-Usage-Agreement", &format!("[{}]", &dua[0].serialize()));
     let hdr2 = header_value("Data-Tracker-Chain", "Data-Tracker-Chain", &base64::encode(&tracker.serialize()));
 
     header.push(hdr0);
     header.push(hdr1);
     header.push(hdr2);
-
-    //body
-    let mut body = JsonValue::new_object();
-    body.insert("mode", to_jsonvalue("file"));
-    let mut payload = JsonValue::new_object();
-    payload.insert("src",to_jsonvalue(file_path));
-    body.insert("file", payload);
 
     //uri
     let mut uri = JsonValue::new_object();
@@ -91,7 +106,7 @@ fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Resul
     itm.insert("response", rspns);
     
     item.push(itm);
-    collection.insert("info",info); 
+    collection.insert("info", gen_info(url)); 
     collection.insert("item",item);
     collection.insert("protocolProfileBehavior", JsonValue::new_object());
 
@@ -102,6 +117,20 @@ fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Resul
         Ok(_k) => Ok(format!("{}/{}",env::current_dir().unwrap().as_path().to_str().unwrap(),file_name)),
         Err(err) => Err(err), 
     }
+}
+
+fn header_value(key: &str, name: &str, value: &str) -> JsonValue {
+    let mut hdr = JsonValue::new_object();
+    hdr.insert("key", to_jsonvalue(key));
+    hdr.insert("name", to_jsonvalue(name));
+    hdr.insert("value", to_jsonvalue(value));
+    hdr.insert("type", to_jsonvalue("text"));
+
+    hdr
+}
+
+fn to_jsonvalue( val: &str) -> JsonValue {
+    JsonValue::String(val.to_string())
 }
 
 fn main() {
