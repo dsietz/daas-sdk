@@ -5,14 +5,16 @@ extern crate reqwest;
 extern crate base64;
 #[macro_use] extern crate json;
 
+use std::env;
+use std::time::{SystemTime};
+use std::fs::{File};
+use std::io::prelude::*;
+use json::{JsonValue};
+use json::object::{Object};
+use url::Url;
 use daas::doc::{DaaSDoc};
 use pbd::dua::{DUA};
 use pbd::dtc::{Tracker};
-use url::Url;
-use json::{JsonValue};
-use json::object::{Object};
-use std::fs::{File};
-use std::io::prelude::*;
 
 fn to_jsonvalue( val: &str) -> JsonValue {
     JsonValue::String(val.to_string())
@@ -28,7 +30,7 @@ fn header_value(key: &str, name: &str, value: &str) -> JsonValue {
     hdr
 }
 
-fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, payload: Vec<u8>) -> Result<i8, std::io::Error>{
+fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, payload: Vec<u8>) -> Result<String, std::io::Error>{
     let mut collection = JsonValue::new_object();
     let mut info = JsonValue::new_object();
     let mut item = JsonValue::new_array();
@@ -43,25 +45,9 @@ fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, payload: Vec<u8>) -> Resu
 
     // headers
     let mut header = JsonValue::new_array();
-/*
-    let mut hdr0 = JsonValue::new_object();
-    hdr0.insert("key", to_jsonvalue("Content-Type"));
-    hdr0.insert("name", to_jsonvalue("Content-Type"));
-    hdr0.insert("value", to_jsonvalue("application/octet-stream"));
-    hdr0.insert("type", to_jsonvalue("text"));
- */
- 
     let hdr0 = header_value("Content-Type", "Content-Type", "application/octet-stream");
-
-    let mut hdr1 = JsonValue::new_object();
-    hdr1.insert("key", to_jsonvalue("Data-Usage-Agreement"));
-    hdr1.insert("value", to_jsonvalue(&format!("[{}]", &dua[0].serialize())));
-    hdr1.insert("type", to_jsonvalue("text"));
-
-    let mut hdr2 = JsonValue::new_object();
-    hdr2.insert("key", to_jsonvalue("Data-Tracker-Chain"));
-    hdr2.insert("value", to_jsonvalue(&base64::encode(&tracker.serialize())));
-    hdr2.insert("type", to_jsonvalue("text"));
+    let hdr1 = header_value("Data-Usage-Agreement", "Data-Usage-Agreement", &format!("[{}]", &dua[0].serialize()));
+    let hdr2 = header_value("Data-Tracker-Chain", "Data-Tracker-Chain", &base64::encode(&tracker.serialize()));
 
     header.push(hdr0);
     header.push(hdr1);
@@ -69,8 +55,13 @@ fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, payload: Vec<u8>) -> Resu
 
     //body
     let mut body = JsonValue::new_object();
-    body.insert("mode", to_jsonvalue("raw"));
+    //let mut options = JsonValue::new_object();
+    //let mut raw = JsonValue::new_object();
+    //raw.insert("language", to_jsonvalue("json"));
+    //options.insert("raw", raw);
+    body.insert("mode", to_jsonvalue("binary"));
     body.insert("raw", payload);
+    //body.insert("options", options);
 
     //uri
     let mut uri = JsonValue::new_object();
@@ -91,6 +82,7 @@ fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, payload: Vec<u8>) -> Resu
     //response
     let mut rspns = JsonValue::new_array();
     
+    // putting it all together
     rqst.insert("method", to_jsonvalue("POST"));
     rqst.insert("header", header);
     rqst.insert("body", body);
@@ -105,10 +97,11 @@ fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, payload: Vec<u8>) -> Resu
     collection.insert("item",item);
     collection.insert("protocolProfileBehavior", JsonValue::new_object());
 
-    let mut file = File::create("postman-colleciton-1.json").unwrap();
+    let file_name = format!("postman-collection-{}.json", SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs());
+    let mut file = File::create(file_name.clone()).unwrap();
     
     match file.write_all(&json::stringify_pretty(collection, 5).as_bytes()){
-        Ok(_k) => Ok(1),
+        Ok(_k) => Ok(format!("{}/{}",env::current_dir().unwrap().as_path().to_str().unwrap(),file_name)),
         Err(err) => Err(err), 
     }
 }
@@ -169,7 +162,7 @@ fn main() {
     let uri = Url::parse(&format!("http://localhost:8088/{}/{}/{}/{}", cat, subcat, src_name, uid));
 
     match call(uri.unwrap(), duas, dtc, data.as_bytes().to_vec()) {
-        Ok(_x) => println!("Postman collection ready."),
+        Ok(f) => println!("Postman collection ready at {}", f),
         Err(err) => panic!("{}", err),
     }
 }
