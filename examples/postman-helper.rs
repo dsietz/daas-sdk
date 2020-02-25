@@ -9,6 +9,7 @@ use std::env;
 use std::time::{SystemTime};
 use std::fs::{File};
 use std::io::prelude::*;
+use std::path::Path;
 use json::{JsonValue};
 use json::object::{Object};
 use url::Url;
@@ -30,7 +31,7 @@ fn header_value(key: &str, name: &str, value: &str) -> JsonValue {
     hdr
 }
 
-fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, payload: Vec<u8>) -> Result<String, std::io::Error>{
+fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Result<String, std::io::Error>{
     let mut collection = JsonValue::new_object();
     let mut info = JsonValue::new_object();
     let mut item = JsonValue::new_array();
@@ -55,13 +56,10 @@ fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, payload: Vec<u8>) -> Resu
 
     //body
     let mut body = JsonValue::new_object();
-    //let mut options = JsonValue::new_object();
-    //let mut raw = JsonValue::new_object();
-    //raw.insert("language", to_jsonvalue("json"));
-    //options.insert("raw", raw);
-    body.insert("mode", to_jsonvalue("binary"));
-    body.insert("raw", payload);
-    //body.insert("options", options);
+    body.insert("mode", to_jsonvalue("file"));
+    let mut payload = JsonValue::new_object();
+    payload.insert("src",to_jsonvalue(file_path));
+    body.insert("file", payload);
 
     //uri
     let mut uri = JsonValue::new_object();
@@ -155,13 +153,13 @@ fn main() {
 
     let dtc = Tracker::new(DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), uid));
 
-    let mut data = String::new();
-    println!("Enter some date ...");
-    let _p8 = std::io::stdin().read_line(&mut data).unwrap();
+    let mut file_path = String::new();
+    println!("Enter the file path to send, (e.g.: C:\\tmp\\hello.json)");
+    let _p8 = std::io::stdin().read_line(&mut file_path).unwrap();
 
     let uri = Url::parse(&format!("http://localhost:8088/{}/{}/{}/{}", cat, subcat, src_name, uid));
 
-    match call(uri.unwrap(), duas, dtc, data.as_bytes().to_vec()) {
+    match call(uri.unwrap(), duas, dtc, file_path.trim()) {
         Ok(f) => println!("Postman collection ready at {}", f),
         Err(err) => panic!("{}", err),
     }
