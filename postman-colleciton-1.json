@@ -1,0 +1,72 @@
+{
+     "info": {
+          "_postman_id": "c34879bc-68b0-4d47-a475-2e54d0f9ffe4",
+          "name": "http://localhost:8088/Event/RSA/IAPP/1212345",
+          "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+     },
+     "item": [
+          {
+               "name": "/Event/RSA/IAPP/1212345",
+               "request": {
+                    "method": "POST",
+                    "header": [
+                         {
+                              "key": "Content-Type",
+                              "name": "Content-Type",
+                              "value": "application/octet-stream",
+                              "type": "text"
+                         },
+                         {
+                              "key": "Data-Usage-Agreement",
+                              "value": "[{\"agreement_name\":\"Registration Only\",\"location\":\"https://www.dua.org/registration.pdf\",\"agreed_dtm\":1582559823}]",
+                              "type": "text"
+                         },
+                         {
+                              "key": "Data-Tracker-Chain",
+                              "value": "W3siaWRlbnRpZmllciI6eyJkYXRhX2lkIjoiRXZlbnR+UlNBfklBUFB+MTIxMjM0NSIsImluZGV4IjowLCJ0aW1lc3RhbXAiOjAsImFjdG9yX2lkIjoiIn0sImhhc2giOiIyNjMxODcwMjYzOTYxNTA1OTMwNjA1NjM1NzQ2ODI1MzE3MTMxMDYiLCJwcmV2aW91c19oYXNoIjoiMCIsIm5vbmNlIjo1fV0=",
+                              "type": "text"
+                         }
+                    ],
+                    "body": {
+                         "mode": "raw",
+                         "raw": [
+                              123,
+                              34,
+                              115,
+                              116,
+                              97,
+                              116,
+                              117,
+                              115,
+                              34,
+                              58,
+                              34,
+                              111,
+                              107,
+                              34,
+                              125,
+                              13,
+                              10
+                         ]
+                    },
+                    "url": {
+                         "raw": "http://localhost:8088/Event/RSA/IAPP/1212345",
+                         "protocol": "http",
+                         "host": [
+                              "localhost"
+                         ],
+                         "port": 8088,
+                         "path": [
+                              "",
+                              "Event",
+                              "RSA",
+                              "IAPP",
+                              "1212345"
+                         ]
+                    }
+               },
+               "response": []
+          }
+     ],
+     "protocolProfileBehavior": {}
+}
