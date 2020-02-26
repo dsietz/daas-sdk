@@ -18,11 +18,48 @@ use daas::doc::{DaaSDoc};
 use pbd::dua::{DUA};
 use pbd::dtc::{Tracker};
 
+fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Result<String, std::io::Error>{
+    let mut collection = JsonValue::new_object();
+    let mut item = JsonValue::new_array();
+    let mut itm = JsonValue::new_object();
+    let mut rqst = JsonValue::new_object();
+    let mut header = JsonValue::new_array();
+    let mut rspns = JsonValue::new_array();
 
-fn get_content_type(file_path: &str) -> Option<&str> {
-    Path::new(file_path)
-    .extension()
-    .and_then(OsStr::to_str)
+    // headers
+    let hdr0 = header_value("Content-Type", "Content-Type", get_content_type(file_path).unwrap());
+    let hdr1 = header_value("Data-Usage-Agreement", "Data-Usage-Agreement", &format!("[{}]", &dua[0].serialize()));
+    let hdr2 = header_value("Data-Tracker-Chain", "Data-Tracker-Chain", &base64::encode(&tracker.serialize()));
+
+    header.push(hdr0);
+    header.push(hdr1);
+    header.push(hdr2);
+
+    //response
+    
+    // putting it all together
+    rqst.insert("method", to_jsonvalue("POST"));
+    rqst.insert("header", header);
+    rqst.insert("body", gen_body(file_path).unwrap());
+    rqst.insert("url", gen_uri(url.clone()));
+
+    itm.insert("name", to_jsonvalue(&url.path()));
+    itm.insert("name", to_jsonvalue(&url.path().to_string()));
+    itm.insert("request",rqst);
+    itm.insert("response", rspns);
+    item.push(itm);
+
+    collection.insert("info", gen_info(url)); 
+    collection.insert("item",item);
+    collection.insert("protocolProfileBehavior", JsonValue::new_object());
+
+    let file_name = format!("postman-collection-{}.json", SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs());
+    let mut file = File::create(file_name.clone()).unwrap();
+    
+    match file.write_all(&json::stringify_pretty(collection, 5).as_bytes()){
+        Ok(_k) => Ok(format!("{}/{}",env::current_dir().unwrap().as_path().to_str().unwrap(),file_name)),
+        Err(err) => Err(err), 
+    }
 }
 
 fn gen_body(file_path: &str) -> Option<JsonValue> {
@@ -76,54 +113,10 @@ fn gen_uri(url: Url) -> JsonValue {
     uri
 }
 
-fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Result<String, std::io::Error>{
-    //body
-    
-
-    let mut collection = JsonValue::new_object();
-
-
-    let mut item = JsonValue::new_array();
-    let mut itm = JsonValue::new_object();
-    itm.insert("name", to_jsonvalue(&url.path()));
-    
-    let mut rqst = JsonValue::new_object();
-
-    // headers
-    let mut header = JsonValue::new_array();
-    let hdr0 = header_value("Content-Type", "Content-Type", get_content_type(file_path).unwrap());
-    let hdr1 = header_value("Data-Usage-Agreement", "Data-Usage-Agreement", &format!("[{}]", &dua[0].serialize()));
-    let hdr2 = header_value("Data-Tracker-Chain", "Data-Tracker-Chain", &base64::encode(&tracker.serialize()));
-
-    header.push(hdr0);
-    header.push(hdr1);
-    header.push(hdr2);
-
-    //response
-    let mut rspns = JsonValue::new_array();
-    
-    // putting it all together
-    rqst.insert("method", to_jsonvalue("POST"));
-    rqst.insert("header", header);
-    rqst.insert("body", gen_body(file_path).unwrap());
-    rqst.insert("url", gen_uri(url.clone()));
-
-    itm.insert("name", to_jsonvalue(&url.path().to_string()));
-    itm.insert("request",rqst);
-    itm.insert("response", rspns);
-    
-    item.push(itm);
-    collection.insert("info", gen_info(url)); 
-    collection.insert("item",item);
-    collection.insert("protocolProfileBehavior", JsonValue::new_object());
-
-    let file_name = format!("postman-collection-{}.json", SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs());
-    let mut file = File::create(file_name.clone()).unwrap();
-    
-    match file.write_all(&json::stringify_pretty(collection, 5).as_bytes()){
-        Ok(_k) => Ok(format!("{}/{}",env::current_dir().unwrap().as_path().to_str().unwrap(),file_name)),
-        Err(err) => Err(err), 
-    }
+fn get_content_type(file_path: &str) -> Option<&str> {
+    Path::new(file_path)
+    .extension()
+    .and_then(OsStr::to_str)
 }
 
 fn header_value(key: &str, name: &str, value: &str) -> JsonValue {
@@ -136,6 +129,15 @@ fn header_value(key: &str, name: &str, value: &str) -> JsonValue {
     hdr
 }
 
+fn input_from_user(msg: &str) -> String {
+    println!("{}", msg);
+    
+    let mut input = String::new();
+    let _reply = std::io::stdin().read_line(&mut input).unwrap();
+
+    input.trim().to_string()
+}
+
 fn to_jsonvalue( val: &str) -> JsonValue {
     JsonValue::String(val.to_string())
 }
@@ -146,53 +148,22 @@ fn main() {
 
     println!("Ready to build your DaaS document ...");
 
-    let mut src_name = String::new();
-    println!("What is the source name?");
-    let _p1 = std::io::stdin().read_line(&mut src_name).unwrap();
-
-    let mut src_uid = String::new();
-    println!("What is the source unique identifier (ID)?");
-    let _p2 = std::io::stdin().read_line(&mut src_uid).unwrap();
-    let uid = match src_uid.trim().parse::<usize>() {
+    let src_name = input_from_user("What is the source name?");
+    let src_uid = input_from_user("What is the source unique identifier (ID)?");
+    let uid = match src_uid.parse::<usize>() {
         Ok(id) => id,
         Err(err) => panic!("Invalid source unique identifier. {}", err),
     };
-
-    let mut cat = String::new();
-    println!("What is the category?");
-    let _p3 = std::io::stdin().read_line(&mut cat).unwrap();
-
-    let mut subcat = String::new();
-    println!("What is the subcategory?");
-    let _p4 = std::io::stdin().read_line(&mut subcat).unwrap();
-
-    let mut auth = String::new();
-    println!("Who is the author?");
-    let _p5 = std::io::stdin().read_line(&mut auth).unwrap();
-
-    let mut usg_agree = String::new();
-    println!("What is the name of the usage agreement, (e.g.: For Billing Purpose)?");
-    let _p6 = std::io::stdin().read_line(&mut usg_agree).unwrap();
-
-    let mut usg_agree_uri = String::new();
-    println!("Where is the usage agreement located, (e.g.: https://www.dua.org/billing.pdf)?");
-    let _p7 = std::io::stdin().read_line(&mut usg_agree_uri).unwrap();
+    let cat = input_from_user("What is the category?");
+    let subcat = input_from_user("What is the subcategory?");
+    let auth = input_from_user("Who is the author?");
+    let  usg_agree = input_from_user("What is the name of the usage agreement, (e.g.: For Billing Purpose)?");
+    let  usg_agree_uri = input_from_user("Where is the usage agreement located, (e.g.: https://www.dua.org/billing.pdf)?");
     let url = Url::parse(&usg_agree_uri).unwrap();
-
     let mut duas = Vec::new();
     duas.push(DUA::new(usg_agree.trim().to_string(), url.as_str().to_string(), 1582559823));
-
-    // clean variables
-    cat = cat.trim().to_string();
-    subcat = subcat.trim().to_string();
-    src_name = src_name.trim().to_string();
-
     let dtc = Tracker::new(DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), uid));
-
-    let mut file_path = String::new();
-    println!("Enter the file path to send, (e.g.: C:\\tmp\\hello.json)");
-    let _p8 = std::io::stdin().read_line(&mut file_path).unwrap();
-
+    let file_path = input_from_user("Enter the file path to send, (e.g.: C:\\tmp\\hello.json)");
     let uri = Url::parse(&format!("http://localhost:8088/{}/{}/{}/{}", cat, subcat, src_name, uid));
 
     match call(uri.unwrap(), duas, dtc, file_path.trim()) {
