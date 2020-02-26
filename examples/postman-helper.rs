@@ -18,7 +18,7 @@ use daas::doc::{DaaSDoc};
 use pbd::dua::{DUA};
 use pbd::dtc::{Tracker};
 
-fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Result<String, std::io::Error>{
+fn call(url: Url, auth: &str, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Result<String, std::io::Error>{
     let mut collection = JsonValue::new_object();
     let mut item = JsonValue::new_array();
     let mut itm = JsonValue::new_object();
@@ -30,6 +30,7 @@ fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Resul
     let hdr0 = header_value("Content-Type", "Content-Type", get_content_type(file_path).unwrap());
     let hdr1 = header_value("Data-Usage-Agreement", "Data-Usage-Agreement", &format!("[{}]", &dua[0].serialize()));
     let hdr2 = header_value("Data-Tracker-Chain", "Data-Tracker-Chain", &base64::encode(&tracker.serialize()));
+    let hdr3 = header_value("Author", "Author", &base64::encode(auth));
 
     header.push(hdr0);
     header.push(hdr1);
@@ -67,7 +68,7 @@ fn gen_body(file_path: &str) -> JsonValue {
         true => {
             let mut body = JsonValue::new_object();
             body.insert("mode", to_jsonvalue("raw"));
-            let mut upload_file = match File::create(path) {
+            let mut upload_file = match File::open(path) {
                 Ok(f) => f,
                 Err(err) => {
                     panic!("Could not open the file! Error: {}", err);
@@ -171,7 +172,7 @@ fn main() {
     let file_path = input_from_user("Enter the file path to send, (e.g.: C:\\tmp\\hello.json)");
     let uri = Url::parse(&format!("http://localhost:8088/{}/{}/{}/{}", cat, subcat, src_name, uid));
 
-    match call(uri.unwrap(), duas, dtc, &file_path) {
+    match call(uri.unwrap(), &auth, duas, dtc, &file_path) {
         Ok(f) => println!("Postman collection ready at {}", f),
         Err(err) => panic!("{}", err),
     }

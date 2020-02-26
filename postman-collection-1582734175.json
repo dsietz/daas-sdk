@@ -1,0 +1,61 @@
+{
+     "info": {
+          "_postman_id": "c34879bc-68b0-4d47-a475-2e54d0f9ffe4",
+          "name": "http://localhost:8088/event/rsa/IAPP/121200",
+          "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+     },
+     "item": [
+          {
+               "name": "/event/rsa/IAPP/121200",
+               "request": {
+                    "method": "POST",
+                    "header": [
+                         {
+                              "key": "Content-Type",
+                              "name": "Content-Type",
+                              "value": "json",
+                              "type": "text"
+                         },
+                         {
+                              "key": "Data-Usage-Agreement",
+                              "name": "Data-Usage-Agreement",
+                              "value": "[{\"agreement_name\":\"Registration Only\",\"location\":\"https://www.dua.org/registration.pdf\",\"agreed_dtm\":1582559823}]",
+                              "type": "text"
+                         },
+                         {
+                              "key": "Data-Tracker-Chain",
+                              "name": "Data-Tracker-Chain",
+                              "value": "W3siaWRlbnRpZmllciI6eyJkYXRhX2lkIjoiZXZlbnR+cnNhfklBUFB+MTIxMjAwIiwiaW5kZXgiOjAsInRpbWVzdGFtcCI6MCwiYWN0b3JfaWQiOiIifSwiaGFzaCI6IjMwNjQ5MjE1MzE3NjM4OTkzOTU3NTE4NDM3MDUwMzkwOTk3MDg5OSIsInByZXZpb3VzX2hhc2giOiIwIiwibm9uY2UiOjV9XQ==",
+                              "type": "text"
+                         }
+                    ],
+                    "body": {
+                         "mode": "raw",
+                         "raw": [],
+                         "options": {
+                              "raw": {
+                                   "language": "text"
+                              }
+                         }
+                    },
+                    "url": {
+                         "raw": "http://localhost:8088/event/rsa/IAPP/121200",
+                         "protocol": "http",
+                         "host": [
+                              "localhost"
+                         ],
+                         "port": 8088,
+                         "path": [
+                              "",
+                              "event",
+                              "rsa",
+                              "IAPP",
+                              "121200"
+                         ]
+                    }
+               },
+               "response": []
+          }
+     ],
+     "protocolProfileBehavior": {}
+}
