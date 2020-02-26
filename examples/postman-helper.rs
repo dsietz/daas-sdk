@@ -121,9 +121,13 @@ fn gen_uri(url: Url) -> JsonValue {
 }
 
 fn get_content_type(file_path: &str) -> Option<&str> {
-    Path::new(file_path)
-    .extension()
-    .and_then(OsStr::to_str)
+    match Path::new(file_path).extension().and_then(OsStr::to_str).unwrap() {
+        "json" => Some("application/json"),
+        "txt" => Some("text/plain"),
+        "xml" => Some("text/xml"),
+        "html" => Some("text/html"),
+        _ => None,
+    }
 }
 
 fn header_value(key: &str, name: &str, value: &str) -> JsonValue {
