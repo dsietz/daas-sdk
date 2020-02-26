@@ -25,6 +25,28 @@ fn get_content_type(file_path: &str) -> Option<&str> {
     .and_then(OsStr::to_str)
 }
 
+fn gen_body(file_path: &str) -> Option<JsonValue> {
+    let mut body = JsonValue::new_object();
+    body.insert("mode", to_jsonvalue("raw"));
+    let mut upload_file = match File::create(file_path) {
+        Ok(f) => f,
+        Err(err) => {
+            return None;
+        }, 
+    };
+    let mut data = Vec::new();
+    match upload_file.read_to_end(&mut data){
+        Ok(_sz) => {},
+        Err(err) => {
+            return None
+        },
+    };
+    body.insert("raw", data);
+    body.insert("options",json::parse(r#"{"raw":{"language":"text"}}"#).unwrap());
+
+    Some(body)
+}
+
 fn gen_info(url: Url) -> JsonValue {
     let mut info = JsonValue::new_object();
 
@@ -35,26 +57,27 @@ fn gen_info(url: Url) -> JsonValue {
     info
 }
 
+fn gen_uri(url: Url) -> JsonValue {
+    let mut uri = JsonValue::new_object();
+    uri.insert("raw", to_jsonvalue(url.as_str()));
+    uri.insert("protocol", to_jsonvalue("http"));
+    let mut hosts = JsonValue::new_array();
+    hosts.push(url.host_str().unwrap());
+    uri.insert("host", hosts);
+    uri.insert("port", url.port().unwrap());
+    let mut params = JsonValue::new_array();
+    
+    for param in url.path().to_string().split('/').collect::<Vec<&str>>().iter() {
+        params.push(to_jsonvalue(param));
+    }
+    
+    uri.insert("path", params);
+
+    uri
+}
+
 fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Result<String, std::io::Error>{
     //body
-    let mut body = JsonValue::new_object();
-    body.insert("mode", to_jsonvalue("raw"));
-    let mut upload_file = match File::create(file_path) {
-        Ok(f) => f,
-        Err(err) => {
-            return Err(err);
-        }, 
-    };
-    let mut data = Vec::new();
-    match upload_file.read_to_end(&mut data){
-        Ok(_sz) => {},
-        Err(err) => {
-            return Err(err)
-        },
-    };
-    body.insert("raw", data);
-    body.insert("options",json::parse(r#"{"raw":{"language":"text"}}"#).unwrap());
-
     
 
     let mut collection = JsonValue::new_object();
@@ -76,30 +99,14 @@ fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Resul
     header.push(hdr1);
     header.push(hdr2);
 
-    //uri
-    let mut uri = JsonValue::new_object();
-    uri.insert("raw", to_jsonvalue(url.as_str()));
-    uri.insert("protocol", to_jsonvalue("http"));
-    let mut hosts = JsonValue::new_array();
-    hosts.push(url.host_str().unwrap());
-    uri.insert("host", hosts);
-    uri.insert("port", url.port().unwrap());
-    let mut params = JsonValue::new_array();
-    
-    for param in url.path().to_string().split('/').collect::<Vec<&str>>().iter() {
-        params.push(to_jsonvalue(param));
-    }
-    
-    uri.insert("path", params);
-
     //response
     let mut rspns = JsonValue::new_array();
     
     // putting it all together
     rqst.insert("method", to_jsonvalue("POST"));
     rqst.insert("header", header);
-    rqst.insert("body", body);
-    rqst.insert("url", uri);
+    rqst.insert("body", gen_body(file_path).unwrap());
+    rqst.insert("url", gen_uri(url.clone()));
 
     itm.insert("name", to_jsonvalue(&url.path().to_string()));
     itm.insert("request",rqst);
