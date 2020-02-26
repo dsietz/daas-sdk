@@ -35,6 +35,7 @@ fn call(url: Url, auth: &str, mut dua: Vec<DUA>, tracker: Tracker, file_path: &s
     header.push(hdr0);
     header.push(hdr1);
     header.push(hdr2);
+    header.push(hdr3);
     
     // putting it all together
     rqst.insert("method", to_jsonvalue("POST"));
@@ -76,13 +77,13 @@ fn gen_body(file_path: &str) -> JsonValue {
             };
             let mut data = Vec::new();
             match upload_file.read_to_end(&mut data){
-                Ok(_sz) => {},
+                Ok(sz) => println!("{} bytes read ...", sz),
                 Err(err) => {
                     panic!("Could not read the file! Error: {}", err);
                 },
             };
-            body.insert("raw", data);
-            body.insert("options",json::parse(r#"{"raw":{"language":"text"}}"#).unwrap());
+            body.insert("raw", String::from_utf8(data).unwrap());
+            body.insert("options",json::parse(r#"{"raw":{"language":"json"}}"#).unwrap());
         
             body
         },
