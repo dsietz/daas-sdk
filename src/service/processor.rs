@@ -3,7 +3,7 @@ use crate::doc::*;
 use crate::errors::daaserror::{DaaSProcessingError};
 use crate::eventing::broker::{DaaSKafkaProcessor, DaaSKafkaBroker};
 use crate::storage::s3::*;
-use rusoto_core::Region;
+//use rusoto_core::Region;
 use rusoto_s3::{StreamingBody};
 use kafka::client::KafkaClient;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
