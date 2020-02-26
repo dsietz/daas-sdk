@@ -34,13 +34,11 @@ fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Resul
     header.push(hdr0);
     header.push(hdr1);
     header.push(hdr2);
-
-    //response
     
     // putting it all together
     rqst.insert("method", to_jsonvalue("POST"));
     rqst.insert("header", header);
-    rqst.insert("body", gen_body(file_path).unwrap());
+    rqst.insert("body", gen_body(file_path));
     rqst.insert("url", gen_uri(url.clone()));
 
     itm.insert("name", to_jsonvalue(&url.path()));
@@ -62,26 +60,33 @@ fn call(url: Url, mut dua: Vec<DUA>, tracker: Tracker, file_path: &str) -> Resul
     }
 }
 
-fn gen_body(file_path: &str) -> Option<JsonValue> {
-    let mut body = JsonValue::new_object();
-    body.insert("mode", to_jsonvalue("raw"));
-    let mut upload_file = match File::create(file_path) {
-        Ok(f) => f,
-        Err(err) => {
-            return None;
-        }, 
-    };
-    let mut data = Vec::new();
-    match upload_file.read_to_end(&mut data){
-        Ok(_sz) => {},
-        Err(err) => {
-            return None
-        },
-    };
-    body.insert("raw", data);
-    body.insert("options",json::parse(r#"{"raw":{"language":"text"}}"#).unwrap());
+fn gen_body(file_path: &str) -> JsonValue {
+    let path = Path::new(file_path);
 
-    Some(body)
+    match path.exists() {
+        true => {
+            let mut body = JsonValue::new_object();
+            body.insert("mode", to_jsonvalue("raw"));
+            let mut upload_file = match File::create(path) {
+                Ok(f) => f,
+                Err(err) => {
+                    panic!("Could not open the file! Error: {}", err);
+                }, 
+            };
+            let mut data = Vec::new();
+            match upload_file.read_to_end(&mut data){
+                Ok(_sz) => {},
+                Err(err) => {
+                    panic!("Could not read the file! Error: {}", err);
+                },
+            };
+            body.insert("raw", data);
+            body.insert("options",json::parse(r#"{"raw":{"language":"text"}}"#).unwrap());
+        
+            body
+        },
+        false => panic!("File {} doesn't exist!", file_path),
+    }
 }
 
 fn gen_info(url: Url) -> JsonValue {
@@ -166,7 +171,7 @@ fn main() {
     let file_path = input_from_user("Enter the file path to send, (e.g.: C:\\tmp\\hello.json)");
     let uri = Url::parse(&format!("http://localhost:8088/{}/{}/{}/{}", cat, subcat, src_name, uid));
 
-    match call(uri.unwrap(), duas, dtc, file_path.trim()) {
+    match call(uri.unwrap(), duas, dtc, &file_path) {
         Ok(f) => println!("Postman collection ready at {}", f),
         Err(err) => panic!("{}", err),
     }
