@@ -303,8 +303,6 @@ impl LocalStorage {
 
     // find the latest revision for the DaaS document based on the doc._id
     fn latest_rev(&self, doc_id: String) -> String {
-        // set ot zero for not existing document
-
         //otherwise find latest revision
         let dir_path = self.get_dir_path(doc_id.clone());
         let base_dir = Path::new(&dir_path);
@@ -322,6 +320,7 @@ impl LocalStorage {
                 latest_rev
             },
             false => {
+                // set to zero for not existing document
                 "0".to_string()
             },
         }

@@ -8,7 +8,7 @@ matrix:
   allow_failures:
     - rust: nightly
 env:
-  - RUST_LOG="warn"
+  - RUST_LOG="debug"
   - RUST_BACKTRACE=0
 before_script:
   - |
