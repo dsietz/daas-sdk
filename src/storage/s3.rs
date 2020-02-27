@@ -39,9 +39,9 @@ impl S3BucketManager for S3BucketMngr {
     /// use daas::storage::s3::{S3BucketManager, S3BucketMngr};
     ///
     /// fn main() {
-    ///    let mut bckt = S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string());
+    ///    let mut bckt = S3BucketMngr::new(Region::UsEast1, "daas-test-bucket".to_string());
     ///
-    ///    assert_eq!(bckt.bucket, "iapp-daas-test-bucket".to_string());
+    ///    assert_eq!(bckt.bucket, "daas-test-bucket".to_string());
     /// }
     /// ```
     fn new(region: Region, bucket_name: String) -> S3BucketMngr {
@@ -68,9 +68,9 @@ impl S3BucketManager for S3BucketMngr {
     /// use daas::storage::s3::{S3BucketManager, S3BucketMngr};
     ///
     /// fn main() {
-    ///    let mut bckt = S3BucketMngr::from_arn(Region::UsEast1, "arn:aws:s3:::iapp-daas-test-bucket".to_string());
+    ///    let mut bckt = S3BucketMngr::from_arn(Region::UsEast1, "arn:aws:s3:::daas-test-bucket".to_string());
     ///
-    ///    assert_eq!(bckt.bucket, "iapp-daas-test-bucket".to_string());
+    ///    assert_eq!(bckt.bucket, "daas-test-bucket".to_string());
     /// }
     /// ```
     fn from_arn(region: Region, bucket_arn: String) -> S3BucketMngr {
@@ -97,9 +97,9 @@ impl S3BucketManager for S3BucketMngr {
     /// use daas::storage::s3::{S3BucketManager, S3BucketMngr};
     ///
     /// fn main() {
-    ///    let mut arn_parts = S3BucketMngr::parse_arn("arn:aws:s3:::iapp-daas-test-bucket".to_string());
+    ///    let mut arn_parts = S3BucketMngr::parse_arn("arn:aws:s3:::daas-test-bucket".to_string());
     ///
-    ///    assert_eq!(arn_parts[5].take().unwrap(), "iapp-daas-test-bucket".to_string());
+    ///    assert_eq!(arn_parts[5].take().unwrap(), "daas-test-bucket".to_string());
     /// }
     /// ```
     fn parse_arn(arn: String) -> Vec<Option<String>>{
@@ -135,13 +135,15 @@ impl S3BucketManager for S3BucketMngr {
     /// use rusoto_s3::{StreamingBody};
     ///
     /// fn main() {
-    ///     let bckt = S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string());
+    ///     let bckt = S3BucketMngr::new(Region::UsEast1, "daas-test-bucket".to_string());
     ///     let content: StreamingBody = String::from("this is a message....").into_bytes().into();
-    ///
+    ///     
+    ///     /*
     ///     match bckt.upload_file("tmp/mystuff/new-record2.txt".to_string(), content) {
     ///         Ok(_y) => assert!(true),
     ///         Err(err) => panic!("{:?}", err),
     ///     }
+    ///     */
     /// }
     /// ```
     fn upload_file(self, content_key: String, content: StreamingBody) -> Result<i8, DaaSStorageError>{
@@ -169,8 +171,8 @@ mod tests {
     fn test_from_arn(){
         let bckt = S3BucketMngr::from_arn(Region::UsEast1, "arn:aws:s3:::daas-test-bucket".to_string());
         
-        assert_eq!(bckt.bucket, "iapp-daas-test-bucket".to_string());
-        assert_eq!(bckt.arn, "arn:aws:s3:::iapp-daas-test-bucket".to_string());
+        assert_eq!(bckt.bucket, "daas-test-bucket".to_string());
+        assert_eq!(bckt.arn, "arn:aws:s3:::daas-test-bucket".to_string());
         assert_eq!(bckt.region, Region::UsEast1);
     }
 
