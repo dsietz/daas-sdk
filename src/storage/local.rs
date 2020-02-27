@@ -392,7 +392,15 @@ mod tests {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tests".to_string());
         
-        assert_eq!(loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), None).unwrap()._rev.unwrap(), "3".to_string());
+        match loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), None) {
+            Ok(doc) => {
+                match doc._rev {
+                    Some(r) => assert_eq!(r, "3".to_string()),
+                    None => assert!(false),
+                }
+            },
+            Err(err) => panic!("Could not find the latest document. Error:{}", err),
+        }
     }
 
     #[test]

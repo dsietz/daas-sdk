@@ -24,7 +24,7 @@ fn call(url: Url, auth: &str, mut dua: Vec<DUA>, tracker: Tracker, file_path: &s
     let mut itm = JsonValue::new_object();
     let mut rqst = JsonValue::new_object();
     let mut header = JsonValue::new_array();
-    let mut rspns = JsonValue::new_array();
+    let rspns = JsonValue::new_array();
 
     // headers
     let hdr0 = header_value("Content-Type", "Content-Type", get_content_type(file_path).unwrap());
