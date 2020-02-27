@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn test_from_arn(){
-        let bckt = S3BucketMngr::from_arn(Region::UsEast1, "arn:aws:s3:::iapp-daas-test-bucket".to_string());
+        let bckt = S3BucketMngr::from_arn(Region::UsEast1, "arn:aws:s3:::daas-test-bucket".to_string());
         
         assert_eq!(bckt.bucket, "iapp-daas-test-bucket".to_string());
         assert_eq!(bckt.arn, "arn:aws:s3:::iapp-daas-test-bucket".to_string());
@@ -176,16 +176,17 @@ mod tests {
 
     #[test]
     fn test_new_s3bucketmngr() {
-        let bckt = S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string());
+        let bckt = S3BucketMngr::new(Region::UsEast1, "daas-test-bucket".to_string());
 
-        assert_eq!(bckt.bucket, "iapp-daas-test-bucket".to_string());
-        assert_eq!(bckt.arn, "arn:aws:s3:::iapp-daas-test-bucket".to_string());
+        assert_eq!(bckt.bucket, "daas-test-bucket".to_string());
+        assert_eq!(bckt.arn, "arn:aws:s3:::daas-test-bucket".to_string());
         assert_eq!(bckt.region, Region::UsEast1);
     }
 
+    #[ignore]
     #[test]
     fn test_upload_file() {
-        let bckt = S3BucketMngr::new(Region::UsEast1, "iapp-daas-test-bucket".to_string());
+        let bckt = S3BucketMngr::new(Region::UsEast1, "daas-test-bucket".to_string());
         let content: StreamingBody = String::from("this is a message....").into_bytes().into();
 
         let rslt = bckt.upload_file("tmp/mystuff/new-record2.txt".to_string(), content).unwrap();

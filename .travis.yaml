@@ -17,7 +17,6 @@ before_script:
       echo 'auto.create.topics.enable=true' >> kafka/config/server.properties
       nohup bash -c "cd kafka && bin/zookeeper-server-start.sh config/zookeeper.properties &"
       nohup bash -c "cd kafka && bin/kafka-server-start.sh config/server.properties &"
-      sleep 5
 addons:
   apt:
     packages:
