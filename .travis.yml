@@ -14,12 +14,13 @@ before_script:
   - |
       pip install 'travis-cargo<0.2' --user &&
       export PATH=$HOME/.local/bin:$PATH   
-  - |
-      wget https://downloads.apache.org/kafka/2.4.0/kafka_2.13-2.4.0.tgz -O kafka.tgz
-      mkdir -p kafka && tar xzf kafka.tgz -C kafka --strip-components 1
-      echo 'auto.create.topics.enable=true' >> kafka/config/server.properties
-      nohup bash -c "cd kafka && bin/zookeeper-server-start.sh config/zookeeper.properties &"
-      nohup bash -c "cd kafka && bin/kafka-server-start.sh config/server.properties &"
+  - travis-cargo update
+  - travis-cargo install cargo-audit
+  - wget https://downloads.apache.org/kafka/2.4.0/kafka_2.13-2.4.0.tgz -O kafka.tgz
+  - mkdir -p kafka && tar xzf kafka.tgz -C kafka --strip-components 1
+  - echo 'auto.create.topics.enable=true' >> kafka/config/server.properties
+  - nohup bash -c "cd kafka && bin/zookeeper-server-start.sh config/zookeeper.properties &"
+  - nohup bash -c "cd kafka && bin/kafka-server-start.sh config/server.properties &"
 addons:
   apt:
     packages:
@@ -35,6 +36,7 @@ script:
       travis-cargo build &&
       travis-cargo test &&
       travis-cargo bench -- --no-run 
+      travis-cargo audit
 after_success:
   - |
     wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
