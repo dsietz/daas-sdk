@@ -320,6 +320,7 @@ impl LocalStorage {
                 for entry in fs::read_dir(dir_path).unwrap() {
                     let entry = entry.unwrap();
                     latest_rev = format!("{}", entry.file_name().into_string().unwrap().split(DELIMITER).collect::<Vec<&str>>().last().unwrap());
+                    info!("found rev {} for document {} ...", latest_rev.clone(), doc_id);
                 }
 
                 latest_rev

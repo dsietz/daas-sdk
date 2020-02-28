@@ -22,7 +22,7 @@ install:
   - cd C:\kafka
   - curl -sSf -o kafka.tgz https://downloads.apache.org/kafka/2.4.0/kafka_2.12-2.4.0.tgz
   - tar -xvzf kafka.tgz
-  - ps: Add-Conent C:\kafka\kafka_2.12-2.4.0\config\server.properties "auto.create.topics.enable=true"
+  - ps: echo 'auto.create.topics.enable=true' >> C:\kafka\kafka_2.12-2.4.0\config\server.properties
   # start kafka
   - ps: $Zookeeper = Start-Process C:\kafka\kafka_2.12-2.4.0\bin\windows\zookeeper-server-start.bat C:\kafka\kafka_2.12-2.4.0\config\zookeeper.properties
   - ps: $Kafka = Start-Process C:\kafka\kafka_2.12-2.4.0\bin\windows\kafka-server-start.bat C:\kafka\kafka_2.12-2.4.0\config\server.properties
