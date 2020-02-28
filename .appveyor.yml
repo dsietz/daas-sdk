@@ -16,6 +16,14 @@ install:
   - mkdir C:\OpenSSL
   - ps: if (Test-Path env:OPENSSL_VERSION) { Start-FileDownload "http://slproweb.com/download/Win${env:BITS}OpenSSL-${env:OPENSSL_VERSION}.exe" }
   - if defined OPENSSL_VERSION Win%BITS%OpenSSL-%OPENSSL_VERSION%.exe /SILENT /VERYSILENT /SP- /DIR="C:\OpenSSL"
+  # install kafka
+  - mkdir C:\kafka
+  - curl -sSf -o kafka.tgz https://downloads.apache.org/kafka/2.4.0/kafka_2.12-2.4.0.tgz
+  - tar -xvzf kafka.tgz C:\kafka
+  -ps: Add-Conent C:\kafka\config\server.properties "auto.create.topics.enable=true"
+  # start kafka
+  - ps: $Zookeeper = Start-Process C:\kafka\bin\windows\zookeeper-server-start.bat C:\kafka\config\zookeeper.properties
+  - ps: $Kafka = Start-Process C:\kafka\bin\windows\kafka-server-start.bat C:\kafka\config\server.properties
   # install Rust
   - curl -sSf -o rustup-init.exe https://win.rustup.rs/
   - rustup-init.exe -y --default-host %TARGET%
@@ -26,3 +34,6 @@ build: false
 test_script: 
   - cargo build
   - cargo test
+on_finish:
+  - ps: Stop-Process -Id $Zookeeper.Id  
+  - ps: Stop-Process -Id $Kafka.Id  

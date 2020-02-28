@@ -314,7 +314,7 @@ impl LocalStorage {
 
         match base_dir.is_dir() {
             true => {
-                debug!("Searching in {} for latest version for {} ...", dir_path.clone(), doc_id);
+                info!("Searching in {} for latest version for {} ...", dir_path.clone(), doc_id);
                 let mut latest_rev = "0".to_string(); 
 
                 for entry in fs::read_dir(dir_path).unwrap() {
