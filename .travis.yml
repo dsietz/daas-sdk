@@ -31,7 +31,6 @@ addons:
     - zlib1g-dev       
 script:
       travis-cargo test &&
-      travis-cargo bench -- --no-run &&
       travis-cargo audit
 after_success:
   - |
