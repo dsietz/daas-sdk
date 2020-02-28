@@ -314,15 +314,13 @@ impl LocalStorage {
 
         match base_dir.is_dir() {
             true => {
-                info!("Searching in {} for latest version for {} ...", dir_path.clone(), doc_id);
+                debug!("Searching in {} for latest version for {} ...", dir_path.clone(), doc_id);
                 let mut latest_rev = "0".to_string(); 
+                let mut paths: Vec<_> = fs::read_dir(dir_path).unwrap().filter_map(|r| r.ok()).collect();
 
-                for entry in fs::read_dir(dir_path).unwrap() {
-                    let entry = entry.unwrap();
-                    latest_rev = format!("{}", entry.file_name().into_string().unwrap().split(DELIMITER).collect::<Vec<&str>>().last().unwrap());
-                    info!("found rev {} for document {} ...", latest_rev.clone(), doc_id);
-                }
-
+                paths.sort_by_key(|dir| dir.path());
+                latest_rev = format!("{}", paths.pop().unwrap().file_name().into_string().unwrap().split(DELIMITER).collect::<Vec<&str>>().last().unwrap());
+                
                 latest_rev
             },
             false => {
