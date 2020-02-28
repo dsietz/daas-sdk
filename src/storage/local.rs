@@ -157,7 +157,7 @@ impl DaaSDocStorage for LocalStorage {
             None =>    LocalStorage::make_doc_uuid(self.get_doc_path(doc_id.clone()), self.latest_rev(doc_id)),
         };
         
-        debug!("Retrieving DaaS document {} ...", path.clone());
+        info!("Retrieving DaaS document {} ...", path.clone());
 
         let serialized: String = match fs::read_to_string(path.clone()) {
                 Ok(c) => {
