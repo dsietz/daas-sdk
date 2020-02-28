@@ -168,9 +168,14 @@ impl DaaSDocStorage for LocalStorage {
                     return Err(RetrieveError)
                 },
             };
-        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
         
-        Ok(doc)
+        match DaaSDoc::from_serialized(&serialized.as_bytes()) {
+            Ok(doc) => Ok(doc),
+            Err(err) => {
+                error!("{}", err);
+                return Err(RetrieveError)
+            },
+        }
     }
 }
 
@@ -502,7 +507,7 @@ mod tests {
         let mut f = File::open(format!("{}/order/music/iStore/16500/{}", loc.path, file_name)).unwrap();
         let mut content = Vec::new();
         f.read_to_end(&mut content).unwrap();
-        let doc = DaaSDoc::from_serialized(&content);
+        let doc = DaaSDoc::from_serialized(&content).unwrap();
 
         // create an audio file from the DaaSDoc data object
         let mut file2 = File::create(Path::new(&format!("{}/order/music/iStore/16500/example_audio_clip.mp3", loc.path))).unwrap();
@@ -525,7 +530,7 @@ mod tests {
         "data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~6000","index":0,"timestamp":0,"actor_id":"","previous_hash":"0"},"hash":"266723159776784443356201446382797864672","nonce":5}]},
         "meta_data":{},"tags":[],
         "data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
+        let doc = DaaSDoc::from_serialized(&serialized.as_bytes()).unwrap();
 
         assert!(loc.upsert_daas_doc(doc).is_err());
     }

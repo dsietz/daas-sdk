@@ -12,7 +12,6 @@ use std::io::prelude::*;
 use std::path::Path;
 use std::ffi::OsStr;
 use json::{JsonValue};
-use json::object::{Object};
 use url::Url;
 use daas::doc::{DaaSDoc};
 use pbd::dua::{DUA};
@@ -32,26 +31,25 @@ fn call(url: Url, auth: &str, mut dua: Vec<DUA>, tracker: Tracker, file_path: &s
     let hdr2 = header_value("Data-Tracker-Chain", "Data-Tracker-Chain", &base64::encode(&tracker.serialize()));
     let hdr3 = header_value("Author", "Author", &base64::encode(auth));
 
-    header.push(hdr0);
-    header.push(hdr1);
-    header.push(hdr2);
-    header.push(hdr3);
+    header.push(hdr0).expect("Could not push header 0!");
+    header.push(hdr1).expect("Could not push header 1!");
+    header.push(hdr2).expect("Could not push header 2!");
+    header.push(hdr3).expect("Could not push header 3!");
     
     // putting it all together
-    rqst.insert("method", to_jsonvalue("POST"));
-    rqst.insert("header", header);
-    rqst.insert("body", gen_body(file_path));
-    rqst.insert("url", gen_uri(url.clone()));
+    rqst.insert("method", to_jsonvalue("POST")).expect("Could not insert method!");
+    rqst.insert("header", header).expect("Could not insert header!");
+    rqst.insert("body", gen_body(file_path)).expect("Could not insert body!");
+    rqst.insert("url", gen_uri(url.clone())).expect("Could not insert url!");
 
-    itm.insert("name", to_jsonvalue(&url.path()));
-    itm.insert("name", to_jsonvalue(&url.path().to_string()));
-    itm.insert("request",rqst);
-    itm.insert("response", rspns);
-    item.push(itm);
+    itm.insert("name", to_jsonvalue(&url.path().to_string())).expect("Could not insert name!");
+    itm.insert("request",rqst).expect("Could not insert request!");
+    itm.insert("response", rspns).expect("Could not insert response!");
+    item.push(itm).expect("Could not push itm!");
 
-    collection.insert("info", gen_info(url)); 
-    collection.insert("item",item);
-    collection.insert("protocolProfileBehavior", JsonValue::new_object());
+    collection.insert("info", gen_info(url)).expect("Could not set info!"); 
+    collection.insert("item",item).expect("Could not set item!");
+    collection.insert("protocolProfileBehavior", JsonValue::new_object()).expect("Could not set protocolProfileBehavior!");
 
     let file_name = format!("postman-collection-{}.json", SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs());
     let mut file = File::create(file_name.clone()).unwrap();
@@ -68,7 +66,7 @@ fn gen_body(file_path: &str) -> JsonValue {
     match path.exists() {
         true => {
             let mut body = JsonValue::new_object();
-            body.insert("mode", to_jsonvalue("raw"));
+            body.insert("mode", to_jsonvalue("raw")).expect("Could not set mode!");
             let mut upload_file = match File::open(path) {
                 Ok(f) => f,
                 Err(err) => {
@@ -82,8 +80,8 @@ fn gen_body(file_path: &str) -> JsonValue {
                     panic!("Could not read the file! Error: {}", err);
                 },
             };
-            body.insert("raw", String::from_utf8(data).unwrap());
-            body.insert("options",json::parse(r#"{"raw":{"language":"json"}}"#).unwrap());
+            body.insert("raw", String::from_utf8(data).unwrap()).expect("Could not insert raw!");
+            body.insert("options",json::parse(r#"{"raw":{"language":"json"}}"#).unwrap()).expect("Could not insert options!");
         
             body
         },
@@ -94,28 +92,28 @@ fn gen_body(file_path: &str) -> JsonValue {
 fn gen_info(url: Url) -> JsonValue {
     let mut info = JsonValue::new_object();
 
-    info.insert("_postman_id", to_jsonvalue("c34879bc-68b0-4d47-a475-2e54d0f9ffe4"));
-    info.insert("name", to_jsonvalue(&url.as_str()));
-    info.insert("schema", to_jsonvalue("https://schema.getpostman.com/json/collection/v2.1.0/collection.json"));
+    info.insert("_postman_id", to_jsonvalue("c34879bc-68b0-4d47-a475-2e54d0f9ffe4")).expect("Could not set _postman_id!");
+    info.insert("name", to_jsonvalue(&url.as_str())).expect("Could not set name!");
+    info.insert("schema", to_jsonvalue("https://schema.getpostman.com/json/collection/v2.1.0/collection.json")).expect("Could not set schema!");
     
     info
 }
 
 fn gen_uri(url: Url) -> JsonValue {
     let mut uri = JsonValue::new_object();
-    uri.insert("raw", to_jsonvalue(url.as_str()));
-    uri.insert("protocol", to_jsonvalue("http"));
+    uri.insert("raw", to_jsonvalue(url.as_str())).expect("Could not set raw!");
+    uri.insert("protocol", to_jsonvalue("http")).expect("Could not set protocol!");
     let mut hosts = JsonValue::new_array();
-    hosts.push(url.host_str().unwrap());
-    uri.insert("host", hosts);
-    uri.insert("port", url.port().unwrap());
+    hosts.push(url.host_str().unwrap()).expect("Could not push hosts!");
+    uri.insert("host", hosts).expect("Could not set host!");
+    uri.insert("port", url.port().unwrap()).expect("Could not set port!");
     let mut params = JsonValue::new_array();
     
     for param in url.path().to_string().split('/').collect::<Vec<&str>>().iter() {
-        params.push(to_jsonvalue(param));
+        params.push(to_jsonvalue(param)).expect("Could not push parameters!");
     }
     
-    uri.insert("path", params);
+    uri.insert("path", params).expect("Could not set path!");
 
     uri
 }
@@ -132,10 +130,10 @@ fn get_content_type(file_path: &str) -> Option<&str> {
 
 fn header_value(key: &str, name: &str, value: &str) -> JsonValue {
     let mut hdr = JsonValue::new_object();
-    hdr.insert("key", to_jsonvalue(key));
-    hdr.insert("name", to_jsonvalue(name));
-    hdr.insert("value", to_jsonvalue(value));
-    hdr.insert("type", to_jsonvalue("text"));
+    hdr.insert("key", to_jsonvalue(key)).expect("Could not set header key!");
+    hdr.insert("name", to_jsonvalue(name)).expect("Could not set header name!");
+    hdr.insert("value", to_jsonvalue(value)).expect("Could not set header value!");
+    hdr.insert("type", to_jsonvalue("text")).expect("Could not set header type!");
 
     hdr
 }

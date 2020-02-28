@@ -7,9 +7,6 @@ rust:
 matrix:
   allow_failures:
     - rust: nightly
-env:
-  - RUST_LOG="warn"
-  - RUST_BACKTRACE=0
 before_script:
   - |
       pip install 'travis-cargo<0.2' --user &&
@@ -33,9 +30,8 @@ addons:
     - gcc
     - zlib1g-dev       
 script:
-      travis-cargo build &&
       travis-cargo test &&
-      travis-cargo bench -- --no-run 
+      travis-cargo bench -- --no-run &&
       travis-cargo audit
 after_success:
   - |
@@ -57,3 +53,5 @@ after_success:
 env:
   global:
     - TRAVIS_CARGO_NIGHTLY_FEATURE=nightly
+    - RUST_LOG="warn"
+    - RUST_BACKTRACE=0

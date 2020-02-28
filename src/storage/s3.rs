@@ -185,7 +185,7 @@ mod tests {
         assert_eq!(bckt.region, Region::UsEast1);
     }
 
-    #[ignore]
+    //#[ignore]
     #[test]
     fn test_upload_file() {
         let bckt = S3BucketMngr::new(Region::UsEast1, "daas-test-bucket".to_string());
