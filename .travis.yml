@@ -15,7 +15,7 @@ before_script:
   - mkdir -p kafka && tar xzf kafka.tgz -C kafka --strip-components 1
   - echo 'auto.create.topics.enable=true' >> kafka/config/server.properties
   - nohup bash -c "cd kafka && bin/zookeeper-server-start.sh config/zookeeper.properties &"
-  - nohup bash -c "cd kafka && bin/kafka-server-start.sh config/server.properties &"
+  - nohup bash -c "cd kafka && bin/kafka-server-start.sh config/server.properties"
 addons:
   apt:
     packages:
@@ -44,6 +44,7 @@ after_success:
     rm -rf kcov-master &&
     cargo clean &&
     cargo test --no-run &&
+    echo `pwd` &&
     for file in target/debug/*-*[^\.d]; do mkdir -p "target/cov/$(basename $file)"; kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"; done &&
     kcov --coveralls-id=$TRAVIS_JOB_ID --merge target/cov target/cov/* &&
     echo "Uploaded code coverage"
