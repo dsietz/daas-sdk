@@ -11,8 +11,9 @@ before_script:
   - |
       pip install 'travis-cargo<0.2' --user &&
       export PATH=$HOME/.local/bin:$PATH   
-  - travis-cargo update
-  - travis-cargo install cargo-audit
+  - cargo update
+  - cargo install --force cargo-audit
+  - cargo generate-lockfile
   - wget https://downloads.apache.org/kafka/2.4.0/kafka_2.13-2.4.0.tgz -O kafka.tgz
   - mkdir -p kafka && tar xzf kafka.tgz -C kafka --strip-components 1
   - echo 'auto.create.topics.enable=true' >> kafka/config/server.properties
@@ -30,8 +31,8 @@ addons:
     - gcc
     - zlib1g-dev       
 script:
-      travis-cargo test &&
-      travis-cargo audit
+      cargo test &&
+      cargo audit
 after_success:
   - |
     wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
