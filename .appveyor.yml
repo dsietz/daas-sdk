@@ -23,8 +23,8 @@ install:
   - tar -xvzf kafka.tgz -C C:\kafka
   - ps: echo 'auto.create.topics.enable=true' >> C:\kafka\kafka_2.12-2.4.0\config\server.properties
   # start kafka
-  - ps: $Zookeeper = Start-Process C:\kafka\kafka_2.12-2.4.0\bin\windows\zookeeper-server-start.bat C:\kafka\kafka_2.12-2.4.0\config\zookeeper.properties
-  - ps: $Kafka = Start-Process C:\kafka\kafka_2.12-2.4.0\bin\windows\kafka-server-start.bat C:\kafka\kafka_2.12-2.4.0\config\server.properties
+  - ps: $Zookeeper = Start-Process C:\kafka\kafka_2.12-2.4.0\bin\windows\zookeeper-server-start.bat C:\kafka\kafka_2.12-2.4.0\config\zookeeper.properties -passthru
+  - ps: $Kafka = Start-Process C:\kafka\kafka_2.12-2.4.0\bin\windows\kafka-server-start.bat C:\kafka\kafka_2.12-2.4.0\config\server.properties -passthru
   # install Rust
   - curl -sSf -o rustup-init.exe https://win.rustup.rs/
   - rustup-init.exe -y --default-host %TARGET%
