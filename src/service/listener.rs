@@ -161,7 +161,7 @@ mod test {
     fn test_process_data() {
         let _ = env_logger::builder().is_test(true).try_init();
         let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~15000","index":0,"timestamp":0,"actor_id":"","previous_hash":"0"},"hash":"33962353871142597622255173163773323410","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
+        let doc = DaaSDoc::from_serialized(&serialized.as_bytes()).unwrap();
         
         let handle = thread::spawn(move || {
             assert!(DaaSListener::process_data(doc, None).is_ok());
@@ -175,7 +175,7 @@ mod test {
     fn test_process_data_tampered_with() {
         let _ = env_logger::builder().is_test(true).try_init();
         let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~15000","index":0,"timestamp":1582766489,"actor_id":"","previous_hash":"0"},"hash":"33962353871142597622255173163773323410","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
+        let doc = DaaSDoc::from_serialized(&serialized.as_bytes()).unwrap();
         
         let handle = thread::spawn(move || {
             assert!(DaaSListener::process_data(doc, None).is_err());

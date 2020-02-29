@@ -130,10 +130,20 @@ impl DaaSProcessorService for DaaSProcessor{
         while DaaSProcessor::keep_listening(rx) {
             for messageset in consumer.poll().unwrap().iter() {
                 for message in messageset.messages() {
+                    debug!("... {}", String::from_utf8(message.value.to_vec()).unwrap());
+
+                    let document = match DaaSDoc::from_serialized(message.value) {
+                        Ok(d) => d,
+                        Err(err) => {
+                            error!("Coud not create DaaSDoc. Error: {}", err);
+                            println!("Skipping document because [{}]", err);
+                            continue;
+                        },
+                    };
                     match callback( DaaSProcessorMessage {
                                         offset: message.offset,
                                         key: message.key,
-                                        doc: DaaSDoc::from_serialized(message.value),
+                                        doc: document.clone(),
                                         topic: messageset.topic(),
                                     },
                                     Some(KafkaClient::new(consumer.client().hosts().to_vec())),
@@ -141,12 +151,15 @@ impl DaaSProcessorService for DaaSProcessor{
                         Ok(_i) => {
                             match consumer.consume_message(messageset.topic(),messageset.partition(),message.offset){
                                 Ok(_c) => {},
-                                Err(err) => panic!("{}",err),
+                                Err(err) => {
+                                    error!("{}", err);
+                                    panic!("{}", err);
+                                },
                             }
                         },
                         Err(err) => {
                             warn!("Could not process the DaasDoc {} [topic:{}, partition:{}, offset:{}]. Error: {:?}", 
-                                    DaaSDoc::from_serialized(message.value)._id,
+                                    document._id,
                                     messageset.topic(),
                                     messageset.partition(),
                                     message.offset,
@@ -181,18 +194,18 @@ mod test {
         S3BucketMngr::new(Region::UsEast1, "daas-test-bucket".to_string())
     }
 
-    #[ignore]
+    //#[ignore]
     #[test]
     fn test_genesis_processor() {
         let _ = env_logger::builder().is_test(true).try_init();
         let my_broker = DaaSKafkaBroker::default();
 
         let serialized = r#"{"_id":"genesis~1","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~15000","index":0,"timestamp":1582766489,"actor_id":"","previous_hash":"0"},"hash":"33962353871142597622255173163773323410","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-        let mut my_doc = DaaSDoc::from_serialized(&serialized.as_bytes());
+        let mut my_doc = DaaSDoc::from_serialized(&serialized.as_bytes()).unwrap();
         assert!(my_broker.broker_message(&mut my_doc, "genesis").is_ok());
         
         let serialized = r#"{"_id":"genesis~2","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~15000","index":0,"timestamp":1582766489,"actor_id":"","previous_hash":"0"},"hash":"33962353871142597622255173163773323410","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-        let mut my_doc = DaaSDoc::from_serialized(&serialized.as_bytes());
+        let mut my_doc = DaaSDoc::from_serialized(&serialized.as_bytes()).unwrap();
         assert!(my_broker.broker_message(&mut my_doc, "genesis").is_ok());
 
         let stopper = DaasGenesisProcessor::run(vec!("localhost:9092".to_string()), FetchOffset::Earliest, GroupOffsetStorage::Kafka, get_bucket());
@@ -207,11 +220,11 @@ mod test {
         let topic = format!("{}", get_unix_now!());        
         
         let serialized = r#"{"_id":"order~clothing~iStore~15000","_rev":null,"source_name":"iStore","source_uid":15000,"category":"order","subcategory":"clothing","author":"iStore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~15000","index":0,"timestamp":1582766489,"actor_id":"","previous_hash":"0"},"hash":"33962353871142597622255173163773323410","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-        let mut my_doc = DaaSDoc::from_serialized(&serialized.as_bytes());
+        let mut my_doc = DaaSDoc::from_serialized(&serialized.as_bytes()).unwrap();
         assert!(my_broker.broker_message(&mut my_doc, &topic).is_ok());
         
         let (tx, rx) = channel();
-        let mut consumer = Consumer::from_hosts(vec!("localhost:9092".to_string()))
+        let consumer = Consumer::from_hosts(vec!("localhost:9092".to_string()))
                             .with_topic(topic.clone())
                             .with_fallback_offset(FetchOffset::Earliest)
                             .with_group(format!("{}-consumer", topic.clone()))

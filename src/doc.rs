@@ -310,13 +310,19 @@ impl DaaSDoc {
     ///
     /// fn main() {
     ///     let serialized = r#"{"_id":"order|clothing|iStore|5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~5000","index":0,"timestamp":0,"actor_id":"","previous_hash":"0"},"hash":"72259503327276020952102368672148358485","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-    ///     let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
+    ///     let doc = DaaSDoc::from_serialized(&serialized.as_bytes()).unwrap();
   	///     
     ///     assert_eq!(doc.source_uid, 5000);
     /// }
     /// ```
-    pub fn from_serialized(serialized: &[u8]) -> DaaSDoc {
-		serde_json::from_slice(&serialized).unwrap()
+    pub fn from_serialized(serialized: &[u8]) -> Result<DaaSDoc, DaaSDocError> {
+		match serde_json::from_slice(&serialized) {
+            Ok(doc) => Ok(doc),
+            Err(err) => {
+                error!("{}", err);
+                Err(DaaSDocError)
+            },
+        }
     }
 
     /// Returns the value of a metadata entry
@@ -657,7 +663,7 @@ mod tests {
         let dua = get_dua();
         let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
         let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data);
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data);
 
         doc
     }
@@ -788,7 +794,7 @@ mod tests {
             "tags":[],
             "data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
         let dua = get_dua();
-        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
+        let doc = DaaSDoc::from_serialized(&serialized.as_bytes()).unwrap();
         let dat: Value = serde_json::from_str(&String::from_utf8(doc.data_obj).unwrap()).unwrap();
   	
         assert_eq!(doc._id, id);

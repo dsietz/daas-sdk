@@ -157,7 +157,7 @@ impl DaaSDocStorage for LocalStorage {
             None =>    LocalStorage::make_doc_uuid(self.get_doc_path(doc_id.clone()), self.latest_rev(doc_id)),
         };
         
-        debug!("Retrieving DaaS document {} ...", path.clone());
+        info!("Retrieving DaaS document {} ...", path.clone());
 
         let serialized: String = match fs::read_to_string(path.clone()) {
                 Ok(c) => {
@@ -168,9 +168,14 @@ impl DaaSDocStorage for LocalStorage {
                     return Err(RetrieveError)
                 },
             };
-        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
         
-        Ok(doc)
+        match DaaSDoc::from_serialized(&serialized.as_bytes()) {
+            Ok(doc) => Ok(doc),
+            Err(err) => {
+                error!("{}", err);
+                return Err(RetrieveError)
+            },
+        }
     }
 }
 
@@ -303,8 +308,6 @@ impl LocalStorage {
 
     // find the latest revision for the DaaS document based on the doc._id
     fn latest_rev(&self, doc_id: String) -> String {
-        // set ot zero for not existing document
-
         //otherwise find latest revision
         let dir_path = self.get_dir_path(doc_id.clone());
         let base_dir = Path::new(&dir_path);
@@ -313,15 +316,15 @@ impl LocalStorage {
             true => {
                 debug!("Searching in {} for latest version for {} ...", dir_path.clone(), doc_id);
                 let mut latest_rev = "0".to_string(); 
+                let mut paths: Vec<_> = fs::read_dir(dir_path).unwrap().filter_map(|r| r.ok()).collect();
 
-                for entry in fs::read_dir(dir_path).unwrap() {
-                    let entry = entry.unwrap();
-                    latest_rev = format!("{}", entry.file_name().into_string().unwrap().split(DELIMITER).collect::<Vec<&str>>().last().unwrap());
-                }
-
+                paths.sort_by_key(|dir| dir.path());
+                latest_rev = format!("{}", paths.pop().unwrap().file_name().into_string().unwrap().split(DELIMITER).collect::<Vec<&str>>().last().unwrap());
+                
                 latest_rev
             },
             false => {
+                // set to zero for not existing document
                 "0".to_string()
             },
         }
@@ -392,7 +395,15 @@ mod tests {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tests".to_string());
         
-        assert_eq!(loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), None).unwrap()._rev.unwrap(), "3".to_string());
+        match loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), None) {
+            Ok(doc) => {
+                match doc._rev {
+                    Some(r) => assert_eq!(r, "3".to_string()),
+                    None => assert!(false),
+                }
+            },
+            Err(err) => panic!("Could not find the latest document. Error:{}", err),
+        }
     }
 
     #[test]
@@ -494,7 +505,7 @@ mod tests {
         let mut f = File::open(format!("{}/order/music/iStore/16500/{}", loc.path, file_name)).unwrap();
         let mut content = Vec::new();
         f.read_to_end(&mut content).unwrap();
-        let doc = DaaSDoc::from_serialized(&content);
+        let doc = DaaSDoc::from_serialized(&content).unwrap();
 
         // create an audio file from the DaaSDoc data object
         let mut file2 = File::create(Path::new(&format!("{}/order/music/iStore/16500/example_audio_clip.mp3", loc.path))).unwrap();
@@ -517,7 +528,7 @@ mod tests {
         "data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~6000","index":0,"timestamp":0,"actor_id":"","previous_hash":"0"},"hash":"266723159776784443356201446382797864672","nonce":5}]},
         "meta_data":{},"tags":[],
         "data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
-        let doc = DaaSDoc::from_serialized(&serialized.as_bytes());
+        let doc = DaaSDoc::from_serialized(&serialized.as_bytes()).unwrap();
 
         assert!(loc.upsert_daas_doc(doc).is_err());
     }

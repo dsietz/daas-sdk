@@ -17,7 +17,7 @@ fn get_bucket() -> S3BucketMngr {
 }
 
 fn main() {
-    std::env::set_var("RUST_LOG", "warn");
+    std::env::set_var("RUST_LOG", "info");
     env_logger::init();
     let hosts = vec!("localhost:9092".to_string());
     
