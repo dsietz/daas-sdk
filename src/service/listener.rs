@@ -6,7 +6,6 @@ use crate::storage::local::{LocalStorage};
 use std::thread;
 
 pub trait DaaSListenerService {
-    fn index(params: Path<Info>, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse;
     fn get_service_health_path() -> String {
         "/health".to_string()
     }
@@ -18,6 +17,8 @@ pub trait DaaSListenerService {
                 .header(http::header::CONTENT_TYPE, "application/json")
                 .body(r#"{"status":"OK"}"#)
     }
+    // what about using a generic with the FromRequest trait to pass the Author
+    fn index(params: Path<Info>, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse;
 }
 
 #[derive(Deserialize)]
@@ -156,7 +157,15 @@ impl DaaSListenerService for DaaSListener {
 mod test {
     use super::*;
     use std::time::Duration;
+/*
+    #[test]
+    fn test_extract_auth_ok() {
+        let srvc = DaaSListener{};
+        let rqst = HttpRequest{};
 
+        assert_eq!(srvc::extract_author(rqst), "myself");
+    }
+*/
     #[test]
     fn test_process_data() {
         let _ = env_logger::builder().is_test(true).try_init();
