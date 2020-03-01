@@ -37,6 +37,7 @@ openssl = "0.10.26"
 actix-web = "1.0.9"
 rusoto_core = "0.42"
 rusoto_s3 = "0.42"
+base64 = "0.11"
 
 [dependencies.kafka]
 version = "0.8.0"

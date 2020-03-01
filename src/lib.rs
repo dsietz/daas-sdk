@@ -10,6 +10,7 @@ extern crate openssl;
 extern crate actix_web;
 extern crate rusoto_core;
 extern crate rusoto_s3;
+extern crate base64;
 
 use log::*;
 use std::env;

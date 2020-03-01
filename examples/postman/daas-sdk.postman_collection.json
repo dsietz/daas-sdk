@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "c34879bc-68b0-4d47-a475-2e54d0f9ffe4",
+		"_postman_id": "b33be4b7-7a24-4511-bf77-abd52683b8b1",
 		"name": "daas-sdk",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -8,6 +8,21 @@
 		{
 			"name": "daas-listener-post-data",
 			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "secret",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "istore_app",
+							"type": "string"
+						}
+					]
+				},
 				"method": "POST",
 				"header": [
 					{
@@ -23,7 +38,7 @@
 					},
 					{
 						"key": "Data-Tracker-Chain",
-						"value": "W3siaWRlbnRpZmllciI6eyJkYXRhX2lkIjoib3JkZXJ+Y2xvdGhpbmd+aVN0b3JlfjUwMDAiLCJpbmRleCI6MCwidGltZXN0YW1wIjowLCJhY3Rvcl9pZCI6IiJ9LCJoYXNoIjoiMjQ3MTcwMjgxMDQ0MTk3NjQ5MzQ5ODA3NzkzMTgxODg3NTg2OTY1IiwicHJldmlvdXNfaGFzaCI6IjAiLCJub25jZSI6NX1d",
+						"value": "W3siaWRlbnRpZmllciI6eyJkYXRhX2lkIjoib3JkZXJ+Y2xvdGhpbmd+aVN0b3JlfjUwMDAiLCJpbmRleCI6MCwidGltZXN0YW1wIjowLCJhY3Rvcl9pZCI6IiIsInByZXZpb3VzX2hhc2giOiIwIn0sImhhc2giOiI3MjI1OTUwMzMyNzI3NjAyMDk1MjEwMjM2ODY3MjE0ODM1ODQ4NSIsIm5vbmNlIjo1fV0=",
 						"type": "text"
 					}
 				],
@@ -70,7 +85,7 @@
 					},
 					{
 						"key": "Data-Tracker-Chain",
-						"value": "W3siaWRlbnRpZmllciI6eyJkYXRhX2lkIjoiaGVhbHRoIiwiaW5kZXgiOjAsInRpbWVzdGFtcCI6MCwiYWN0b3JfaWQiOiIifSwiaGFzaCI6IjIzMzk0ODgzMjU2MDQxNzY0ODYzMDQzMTY0MDcwMzcwNzcxOTEwNCIsInByZXZpb3VzX2hhc2giOiIwIiwibm9uY2UiOjV9XQ==",
+						"value": "W3siaWRlbnRpZmllciI6eyJkYXRhX2lkIjoib3JkZXJ+Y2xvdGhpbmd+aVN0b3JlfjUwMDAiLCJpbmRleCI6MCwidGltZXN0YW1wIjowLCJhY3Rvcl9pZCI6IiIsInByZXZpb3VzX2hhc2giOiIwIn0sImhhc2giOiI3MjI1OTUwMzMyNzI3NjAyMDk1MjEwMjM2ODY3MjE0ODM1ODQ4NSIsIm5vbmNlIjo1fV0=",
 						"type": "text"
 					}
 				],

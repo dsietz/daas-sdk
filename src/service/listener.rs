@@ -3,9 +3,49 @@ use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
 use crate::doc::*;
 use crate::storage::{DaaSDocStorage};
 use crate::storage::local::{LocalStorage};
+use base64::decode;
 use std::thread;
 
 pub trait DaaSListenerService {
+    /// Default functionality is to use Basic Authentication.
+    /// Authorization: Basic <credentials>
+    fn extract_author(req: HttpRequest) -> String {
+        let default_author = "Anonymous".to_string();
+        match req.headers().get("Authorization") {
+            Some(hdr) => {
+                match hdr.to_str() {
+                    Ok(encoded) => {
+                        match decode(&encoded.replace("Basic ","")) {
+                            Ok(decoded) => {
+                                match String::from_utf8(decoded) {
+                                    Ok(base) => base.split(':').collect::<Vec<&str>>()[0].to_string(),
+                                    Err(err) => {
+                                        debug!("{}", err);
+                                        warn!("Authorization header unreadbale. Using [{}] as author.", default_author);
+                                        default_author
+                                    },
+                                }
+                            },
+                            Err(err) => {
+                                debug!("{}", err);
+                                warn!("Authorization header unreadbale. Using [{}] as author.", default_author);
+                                default_author
+                            },
+                        }
+                    },
+                    Err(err) => {
+                        debug!("{}", err);
+                        warn!("Authorization header unreadbale. Using [{}] as author.", default_author);
+                        default_author
+                    },
+                }
+            },
+            None => {
+                warn!("Authorization header missing. Using [{}] as author.", default_author);
+                default_author
+            },
+        }
+    }
     fn get_service_health_path() -> String {
         "/health".to_string()
     }
@@ -134,7 +174,7 @@ impl DaaSListenerService for DaaSListener {
         };
 
         // issue #8 - https://github.com/dsietz/daas-sdk/issues/8
-        let usr = "myself".to_string();
+        let usr = Self::extract_author(req.clone());
         let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), tracker.clone(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());
 
@@ -160,10 +200,19 @@ mod test {
 /*
     #[test]
     fn test_extract_auth_ok() {
-        let srvc = DaaSListener{};
-        let rqst = HttpRequest{};
+        /*
+        let req = test::TestRequest::get().uri("/")
+            .header("Authorization", base64::encode(b"myself:password"))
+            .to_request();
+            */
 
-        assert_eq!(srvc::extract_author(rqst), "myself");
+        //let uri = Uri::from_shared("http://example.com/foo".to_string().as_bytes()).unwrap();
+        let uri = "http://example.com/foo".parse::<Uri>().unwrap();
+        let mut headers = HeaderMap::new();
+        headers.insert(HeaderName::from_lowercase(b"authorization").unwrap(), HeaderValue::from_str(&base64::encode(b"myself:password")).unwrap());
+        let req = actix_web::HttpRequest::new(Method::GET, uri, Version::HTTP_2,headers, None);
+
+        assert_eq!(DaaSListener::extract_author(req), "myself");
     }
 */
     #[test]
