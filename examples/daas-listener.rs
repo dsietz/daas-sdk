@@ -2,6 +2,7 @@ extern crate daas;
 extern crate actix_web;
 
 use daas::service::listener::{DaaSListener, DaaSListenerService};
+use daas::service::extractor::{Author};
 use pbd::dua::middleware::actix::*;
 use pbd::dtc::middleware::actix::*;
 use actix_web::{web, App, HttpServer};
@@ -18,7 +19,7 @@ fn main() {
                 web::resource(&DaaSListener::get_service_health_path()).route(web::get().to(DaaSListener::health))
             )
             .service(
-                web::resource(&DaaSListener::get_service_path()).route(web::post().to(DaaSListener::index))
+                web::resource(&DaaSListener::get_service_path()).route(web::post().to(DaaSListener::index::<Author>))
             )
         )
     .bind("localhost:8088")

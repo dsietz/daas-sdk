@@ -11,6 +11,15 @@ use base64::decode;
 pub type LocalError = MissingAuthorError;
 
 pub trait AuthorExtractor {
+    fn default() -> Author {
+        let def_auth = "Anonymous".to_string();
+        warn!("Using [{}] as author.", def_auth);
+        
+        Author {
+            name: def_auth,
+        }
+    }
+    fn name(&self) -> String;
     fn new(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<Author, MissingAuthorError>;
 }
 
@@ -25,18 +34,13 @@ impl fmt::Display for Author {
     }
 }
 
-impl Author {
-    pub fn default() -> Author {
-        let def_auth = "Anonymous".to_string();
-        warn!("Using [{}] as author.", def_auth);
-        
-        Author {
-            name: def_auth,
-        }
-    }
-}
+impl Author {}
 
 impl AuthorExtractor for Author {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
     fn new(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<Self,MissingAuthorError> {
         match req.headers().get("Authorization") {
             Some(hdr) => {
