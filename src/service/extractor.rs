@@ -1,8 +1,7 @@
 use super::*;
 use std::fmt;
-use crate::service::listener::*;
+//use std::marker::PhantomData;
 use actix_web::{FromRequest, HttpRequest};
-use actix_web::http::header::HeaderValue;
 use base64::decode;
 
 // 
@@ -10,22 +9,10 @@ use base64::decode;
 // 
 pub type LocalError = MissingAuthorError;
 
-pub trait AuthorExtractor {
-    fn default() -> Author {
-        let def_auth = "Anonymous".to_string();
-        warn!("Using [{}] as author.", def_auth);
-        
-        Author {
-            name: def_auth,
-        }
-    }
-    fn name(&self) -> String;
-    fn new(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<Author, MissingAuthorError>;
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub struct Author {
-    pub name: String,
+    name: String,
+    //callback: PhantomData<fn(&HttpRequest, &mut actix_web::dev::Payload) -> Result<Self, MissingAuthorError>>,
 }
 
 impl fmt::Display for Author {
@@ -34,14 +21,12 @@ impl fmt::Display for Author {
     }
 }
 
-impl Author {}
+impl Author {
+    fn default(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<Self, MissingAuthorError> {
+        let default = Self {
+                        name: "Anonymous".to_string()
+                    };
 
-impl AuthorExtractor for Author {
-    fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    fn new(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<Self,MissingAuthorError> {
         match req.headers().get("Authorization") {
             Some(hdr) => {
                 match hdr.to_str() {
@@ -50,32 +35,40 @@ impl AuthorExtractor for Author {
                             Ok(decoded) => {
                                 match String::from_utf8(decoded) {
                                     Ok(base) => {
-                                        Ok(Author {
+                                        Ok(Self {
                                             name: base.split(':').collect::<Vec<&str>>()[0].to_string(),
                                         })
                                     },
                                     Err(err) => {
                                         debug!("{}", err);
-                                        Ok(Self::default())
+                                        Ok(default)
                                     },
                                 }
                             },
                             Err(err) => {
                                 debug!("{}", err);
-                                Ok(Self::default())
+                                Ok(default)
                             },
                         }
                     },
                     Err(err) => {
                         debug!("{}", err);
-                        Ok(Self::default())
+                        Ok(default)
                     },
                 }
             },
             None => {
-                Ok(Self::default())
+                Ok(default)
             },
         }
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn new(req: &HttpRequest, payload: &mut actix_web::dev::Payload, callback: fn(&HttpRequest, &mut actix_web::dev::Payload) -> Result<Self, MissingAuthorError>) -> Result<Author, MissingAuthorError> {
+        callback(req, payload)
     }
 }
 
@@ -85,7 +78,7 @@ impl FromRequest for Author {
     type Error = LocalError;
     // convert request to future self
     fn from_request(req: &HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
-        Self::new(req, payload)
+        Self::new(req, payload, Self::default)
     }
 }
 

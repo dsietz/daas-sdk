@@ -1,10 +1,13 @@
 extern crate daas;
 extern crate actix_web;
 
+use daas::errors::{MissingAuthorError};
 use daas::service::listener::{DaaSListener, DaaSListenerService};
+use daas::service::extractor::{Author, AuthorExtractor};
 use pbd::dua::middleware::actix::*;
 use pbd::dtc::middleware::actix::*;
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, App, FromRequest, HttpRequest, HttpServer};
+
 
 fn main() {
     std::env::set_var("RUST_LOG", "warn");
