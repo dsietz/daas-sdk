@@ -3,7 +3,7 @@
 [![Docs.rs](https://docs.rs/daas/badge.svg)](https://docs.rs/daas)
 
 Linux: [![Build Status](https://travis-ci.org/dsietz/daas-sdk.svg?branch=master)](https://travis-ci.org/dsietz/daas-sdk)
-Windows: [![Build status](https://ci.appveyor.com/api/projects/status/ws0gwwlr2hgiqsiv?svg=true)](https://ci.appveyor.com/project/dsietz/daas-sdk)
+Windows: [![Build status](https://ci.appveyor.com/api/projects/status/ws0gwwlr2hgiqsiv/branch/master?svg=true)](https://ci.appveyor.com/project/dsietz/daas-sdk)
 
 # Data as a Service (DaaS) SDK
 

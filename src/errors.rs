@@ -1,5 +1,6 @@
 use std::error;
 use std::fmt;
+use actix_web::ResponseError;
 
 // struct
 #[derive(Debug, Clone)]
@@ -22,6 +23,9 @@ pub struct EncryptionError;
 
 #[derive(Debug, Clone)]
 pub struct MissingAgreementError;
+
+#[derive(Debug, Clone)]
+pub struct MissingAuthorError;
 
 #[derive(Debug, Clone)]
 pub struct RetrieveError;
@@ -61,7 +65,6 @@ pub mod daaserror {
     #[derive(Debug)]
     pub enum DaaSDocError {
         DaaSDocError,
-        
     }
 
     #[derive(Debug)]
@@ -83,6 +86,7 @@ pub mod daaserror {
     #[derive(Debug)]
     pub enum DaaSProcessingError {
         BrokerError,
+        MissingAuthorError,
         RetrieveError,
         UpsertError,
     }
@@ -137,8 +141,6 @@ impl fmt::Display for EncryptionError {
 }
 impl error::Error for EncryptionError {}
 
-
-
 impl fmt::Display for MissingAgreementError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Missing a usage agreement for the DaaS document.")
@@ -146,6 +148,13 @@ impl fmt::Display for MissingAgreementError {
 }
 impl error::Error for MissingAgreementError{}
 
+impl fmt::Display for MissingAuthorError{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Missing an author for the DaaS document.")
+    }
+}
+impl error::Error for MissingAuthorError{}
+impl ResponseError for MissingAuthorError{}
 
 impl fmt::Display for RetrieveError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

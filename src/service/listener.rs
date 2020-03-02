@@ -1,10 +1,10 @@
 use super::*;
+use std::thread;
+use base64::decode;
 use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
 use crate::doc::*;
 use crate::storage::{DaaSDocStorage};
 use crate::storage::local::{LocalStorage};
-use base64::decode;
-use std::thread;
 
 pub trait DaaSListenerService {
     /// Default functionality is to use Basic Authentication.
