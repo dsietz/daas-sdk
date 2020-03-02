@@ -5,47 +5,9 @@ use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
 use crate::doc::*;
 use crate::storage::{DaaSDocStorage};
 use crate::storage::local::{LocalStorage};
+use super::extractor::{Author, AuthorExtractor};
 
 pub trait DaaSListenerService {
-    /// Default functionality is to use Basic Authentication.
-    /// Authorization: Basic <credentials>
-    fn extract_author(req: HttpRequest) -> String {
-        let default_author = "Anonymous".to_string();
-        match req.headers().get("Authorization") {
-            Some(hdr) => {
-                match hdr.to_str() {
-                    Ok(encoded) => {
-                        match decode(&encoded.replace("Basic ","")) {
-                            Ok(decoded) => {
-                                match String::from_utf8(decoded) {
-                                    Ok(base) => base.split(':').collect::<Vec<&str>>()[0].to_string(),
-                                    Err(err) => {
-                                        debug!("{}", err);
-                                        warn!("Authorization header unreadbale. Using [{}] as author.", default_author);
-                                        default_author
-                                    },
-                                }
-                            },
-                            Err(err) => {
-                                debug!("{}", err);
-                                warn!("Authorization header unreadbale. Using [{}] as author.", default_author);
-                                default_author
-                            },
-                        }
-                    },
-                    Err(err) => {
-                        debug!("{}", err);
-                        warn!("Authorization header unreadbale. Using [{}] as author.", default_author);
-                        default_author
-                    },
-                }
-            },
-            None => {
-                warn!("Authorization header missing. Using [{}] as author.", default_author);
-                default_author
-            },
-        }
-    }
     fn get_service_health_path() -> String {
         "/health".to_string()
     }
@@ -58,7 +20,7 @@ pub trait DaaSListenerService {
                 .body(r#"{"status":"OK"}"#)
     }
     // what about using a generic with the FromRequest trait to pass the Author
-    fn index(params: Path<Info>, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse;
+    fn index(params: Path<Info>, author: Author, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse;
 }
 
 #[derive(Deserialize)]
@@ -162,7 +124,7 @@ impl DaaSListener {
 }
 
 impl DaaSListenerService for DaaSListener {
-    fn index(params: Path<Info>, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse {
+    fn index(params: Path<Info>, author: Author, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse {
         let cat: String = params.category.clone();
         let subcat: String = params.subcategory.clone();
         let srcnme: String = params.source_name.clone();
@@ -174,7 +136,7 @@ impl DaaSListenerService for DaaSListener {
         };
 
         // issue #8 - https://github.com/dsietz/daas-sdk/issues/8
-        let usr = Self::extract_author(req.clone());
+        let usr = author.name;
         let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), tracker.clone(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());
 
