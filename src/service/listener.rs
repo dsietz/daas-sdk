@@ -4,7 +4,7 @@ use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
 use crate::doc::*;
 use crate::storage::{DaaSDocStorage};
 use crate::storage::local::{LocalStorage};
-use super::extractor::{Author};
+use super::extractor::{Author, AuthorExtractor, DefaultAuthor};
 
 pub trait DaaSListenerService {
     fn get_service_health_path() -> String {
@@ -19,7 +19,7 @@ pub trait DaaSListenerService {
                 .body(r#"{"status":"OK"}"#)
     }
     // what about using a generic with the FromRequest trait to pass the Author
-    fn index(params: Path<Info>, author: Author, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse;
+    fn index(params: Path<Info>, author: DefaultAuthor, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse;
 }
 
 #[derive(Deserialize)]
@@ -123,7 +123,7 @@ impl DaaSListener {
 }
 
 impl DaaSListenerService for DaaSListener {
-    fn index(params: Path<Info>, author: Author, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse {
+    fn index(params: Path<Info>, author: DefaultAuthor, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse {
         let cat: String = params.category.clone();
         let subcat: String = params.subcategory.clone();
         let srcnme: String = params.source_name.clone();
@@ -135,7 +135,7 @@ impl DaaSListenerService for DaaSListener {
         };
 
         // issue #8 - https://github.com/dsietz/daas-sdk/issues/8
-        let usr = author.name();
+        let usr = author.get_name();
         let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), tracker.clone(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());
 

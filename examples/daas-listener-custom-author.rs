@@ -3,7 +3,7 @@ extern crate actix_web;
 
 use daas::errors::{MissingAuthorError};
 use daas::service::listener::{DaaSListener, DaaSListenerService};
-use daas::service::extractor::{Author, AuthorExtractor};
+use daas::service::extractor::{Author};
 use pbd::dua::middleware::actix::*;
 use pbd::dtc::middleware::actix::*;
 use actix_web::{web, App, FromRequest, HttpRequest, HttpServer};
