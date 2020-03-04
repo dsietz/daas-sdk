@@ -1,9 +1,26 @@
 use super::*;
-use super::extractor::{Author, AuthorExtractor};
+use std::fmt;
+use actix_web::{FromRequest, HttpRequest};
 use base64::decode;
 
-impl AuthorExtractor for Author {
-    fn extract_author(&mut self, req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<String, MissingAuthorError> {
+// 
+// The Author Extractor
+// 
+pub type LocalError = MissingAuthorError;
+
+pub trait AuthorExtractor {
+    fn extract_author(&mut self, req: &HttpRequest) -> Result<String, MissingAuthorError>;
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Author {}
+
+/// Base64Author
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Base64Author {}
+
+impl AuthorExtractor for Base64Author {  
+    fn extract_author(&mut self, req: &HttpRequest) -> Result<String, MissingAuthorError> {
         match req.headers().get("Authorization") {
             Some(hdr) => {
                 match hdr.to_str() {
