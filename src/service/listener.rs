@@ -2,11 +2,10 @@ use super::*;
 use std::thread;
 use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
 use crate::doc::*;
-use crate::storage::{DaaSDocStorage};
-use crate::storage::local::{LocalStorage};
-use super::extractor::{Author, AuthorExtractor};
-use super::extractor::base64_author;
-use base64::decode;
+use crate::storage::DaaSDocStorage;
+use crate::storage::local::LocalStorage;
+use super::actix::extractor::Author;
+use super::actix::base64_author;
 
 pub trait DaaSListenerService {
     fn get_service_health_path() -> String {

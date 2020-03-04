@@ -1,4 +1,4 @@
-use super::*;
+use std::time::{SystemTime};
 
 macro_rules! get_unix_now {
     ( $( $x:expr ),* ) => {
