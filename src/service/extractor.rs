@@ -18,11 +18,11 @@ pub trait AuthorExtractor {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Author {
+pub struct Base64Author {
     name: String,
 }
 
-impl fmt::Display for Author {
+impl fmt::Display for Base64Author {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", serde_json::to_string(&self).unwrap())
     }
@@ -41,7 +41,7 @@ impl fmt::Display for Author {
 }
 */
 
-impl AuthorExtractor for Author {
+impl AuthorExtractor for Base64Author {
     fn extract_author(&mut self, req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<String, MissingAuthorError> {
         match req.headers().get("Authorization") {
             Some(hdr) => {
@@ -82,7 +82,7 @@ impl AuthorExtractor for Author {
     }
 
     fn new() -> Self {
-        Author {
+        Base64Author {
             name: "Anonymous".to_string(),
         }
     }
@@ -93,46 +93,4 @@ impl AuthorExtractor for Author {
     }
 }
 
-author_from_request!(Author);
-/*
-impl<A> FromRequest for AuthorExtractor::<A> {
-    type Config = ();
-    type Future = Result<Self, Self::Error>;
-    type Error = LocalError;
-    // convert request to future self
-    fn from_request(req: &HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {       
-        match AuthorExtractor::<A>.extract_author(req, payload) {
-            Ok(name) => {
-                AuthorExtractor::<A>.set_name(name)
-            },
-            Err(err) => {
-                error!("{}", err);
-                Err(err)
-            },
-        }
-    }
-}
-*/
-/*
-impl FromRequest for DefaultAuthor {
-    type Config = ();
-    type Future = Result<Self, Self::Error>;
-    type Error = LocalError;
-    // convert request to future self
-    fn from_request(req: &HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
-        let mut author = DefaultAuthor {
-            name: "Anonymous".to_string(),
-        };
-        
-        match author.extract_author(req, payload) {
-            Ok(name) => {
-                author.set_name(name)
-            },
-            Err(err) => {
-                error!("{}", err);
-                Err(err)
-            },
-        }
-    }
-}
-*/
+author_from_request!(Base64Author);

@@ -2,9 +2,9 @@ use super::*;
 use std::thread;
 use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
 use crate::doc::*;
-use crate::storage::{DaaSDocStorage};
-use crate::storage::local::{LocalStorage};
-use super::extractor::{Author, AuthorExtractor};
+use crate::storage::DaaSDocStorage;
+use crate::storage::local::LocalStorage;
+use super::extractor::AuthorExtractor;
 
 pub trait DaaSListenerService {
     fn get_service_health_path() -> String {
@@ -134,15 +134,7 @@ impl DaaSListenerService for DaaSListener {
             None => "unknown",
         };
 
-        // issue #8 - https://github.com/dsietz/daas-sdk/issues/8
-        let usr = match author.extract_author(&req) {
-            Ok(auth) => auth,
-            Err(err) => {
-                return HttpResponse::UnprocessableEntity()
-                    .header(http::header::CONTENT_TYPE, "application/json")
-                    .body(r#"{"error":"unable to extract author"}"#);
-            },
-        };
+        let usr = author.get_name();
         let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), tracker.clone(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());
 
