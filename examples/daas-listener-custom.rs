@@ -2,11 +2,17 @@ extern crate daas;
 extern crate actix_web;
 
 use daas::service::listener::{DaaSListener, DaaSListenerService};
-use daas::service::extractor::{Author};
 use pbd::dua::middleware::actix::*;
 use pbd::dtc::middleware::actix::*;
 use actix_web::{web, App, HttpServer};
-use daas::service::author::Base64Author;
+use daas::service::author::{Author, AuthorExtractor};
+use daas::errors::MissingAuthorError;
+
+impl AuthorExtractor for Author {
+    fn extract_author(&mut self, req: &HttpRequest) -> Result<String, MissingAuthorError> {
+        Ok("Mr. Fipps".to_string())
+    }
+}
 
 fn main() {
     std::env::set_var("RUST_LOG", "warn");

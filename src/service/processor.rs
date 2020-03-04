@@ -3,7 +3,6 @@ use crate::doc::*;
 use crate::errors::daaserror::{DaaSProcessingError};
 use crate::eventing::broker::{DaaSKafkaProcessor, DaaSKafkaBroker};
 use crate::storage::s3::*;
-use rusoto_core::Region;
 use rusoto_s3::{StreamingBody};
 use kafka::client::KafkaClient;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
@@ -189,6 +188,7 @@ mod test {
     use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
     use std::time::Duration;
     use std::thread;
+    use rusoto_core::Region;
 
     fn get_bucket() -> S3BucketMngr {
         S3BucketMngr::new(Region::UsEast1, "daas-test-bucket".to_string())

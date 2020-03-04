@@ -135,7 +135,14 @@ impl DaaSListenerService for DaaSListener {
         };
 
         // issue #8 - https://github.com/dsietz/daas-sdk/issues/8
-        let usr = author.get_name();
+        let usr = match author.extract_author(&req) {
+            Ok(auth) => auth,
+            Err(err) => {
+                return HttpResponse::UnprocessableEntity()
+                    .header(http::header::CONTENT_TYPE, "application/json")
+                    .body(r#"{"error":"unable to extract author"}"#);
+            },
+        };
         let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), tracker.clone(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());
 
