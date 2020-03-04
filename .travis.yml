@@ -31,8 +31,8 @@ addons:
     - gcc
     - zlib1g-dev       
 script:
-      cargo test &&
-      cargo audit
+  - cargo test
+  - cargo audit
 after_success:
   - |
     wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
