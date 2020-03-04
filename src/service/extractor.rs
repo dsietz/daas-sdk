@@ -1,11 +1,10 @@
 use super::*;
 use std::fmt;
-//use std::marker::PhantomData;
 use actix_web::{FromRequest, HttpRequest};
 use base64::decode;
 
 // 
-// The Author Extractor
+// The common trait for all Author Extractors
 // 
 pub type LocalError = MissingAuthorError;
 
@@ -17,10 +16,13 @@ pub trait AuthorExtractor {
         where Self: std::marker::Sized;
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Base64Author {
-    name: String,
-}
+
+//
+// The Base64Author Extractor
+//
+
+// Use macros to crate our Base64Author structure
+author_struct!(Base64Author);
 
 impl fmt::Display for Base64Author {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -64,20 +66,11 @@ impl AuthorExtractor for Base64Author {
         }
     }
     
-    fn get_name(&self) -> String {
-        self.name.clone()
-    }
-
-    fn new() -> Self {
-        Base64Author {
-            name: "Anonymous".to_string(),
-        }
-    }
-
-    fn set_name(&mut self, name: String) -> Result<Self, MissingAuthorError> {
-        self.name = name;
-        Ok(self.clone())
-    }
+    // Use macros to write the default functions
+    author_fn_get_name!();
+    author_fn_new!();
+    author_fn_set_name!();
 }
 
+// Use macros to write the implmentation of the FromRequest trait
 author_from_request!(Base64Author);
