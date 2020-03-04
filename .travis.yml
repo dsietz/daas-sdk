@@ -1,7 +1,6 @@
 sudo: true
 os: linux
 language: rust
-cache: cargo
 rust:
   - stable
 matrix:
