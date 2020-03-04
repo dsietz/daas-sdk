@@ -12,7 +12,9 @@ pub type LocalError = MissingAuthorError;
 pub trait AuthorExtractor {
     fn extract_author(&mut self, req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<String, MissingAuthorError>;
     fn get_name(&self) -> String;
-    fn set_name(&mut self, name: String) -> Result<Self, MissingAuthorError> where Self: std::marker::Sized;
+    fn new() -> Self;
+    fn set_name(&mut self, name: String) -> Result<Self, MissingAuthorError> 
+        where Self: std::marker::Sized;
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -26,19 +28,20 @@ impl fmt::Display for Author {
     }
 }
 
+/*
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct DefaultAuthor {
+pub struct Author {
     name: String,
 }
 
-impl fmt::Display for DefaultAuthor {
+impl fmt::Display for Author {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", serde_json::to_string(&self).unwrap())
     }
 }
+*/
 
-
-impl DefaultAuthor {
+impl AuthorExtractor for Author {
     fn extract_author(&mut self, req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<String, MissingAuthorError> {
         match req.headers().get("Authorization") {
             Some(hdr) => {
@@ -74,8 +77,14 @@ impl DefaultAuthor {
         }
     }
     
-    pub fn get_name(&self) -> String {
+    fn get_name(&self) -> String {
         self.name.clone()
+    }
+
+    fn new() -> Self {
+        Author {
+            name: "Anonymous".to_string(),
+        }
     }
 
     fn set_name(&mut self, name: String) -> Result<Self, MissingAuthorError> {
@@ -83,6 +92,8 @@ impl DefaultAuthor {
         Ok(self.clone())
     }
 }
+
+author_from_request!(Author);
 /*
 impl<A> FromRequest for AuthorExtractor::<A> {
     type Config = ();
@@ -102,6 +113,7 @@ impl<A> FromRequest for AuthorExtractor::<A> {
     }
 }
 */
+/*
 impl FromRequest for DefaultAuthor {
     type Config = ();
     type Future = Result<Self, Self::Error>;
@@ -123,3 +135,4 @@ impl FromRequest for DefaultAuthor {
         }
     }
 }
+*/
