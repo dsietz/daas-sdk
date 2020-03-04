@@ -6,6 +6,7 @@ use daas::service::extractor::{Base64Author};
 use pbd::dua::middleware::actix::*;
 use pbd::dtc::middleware::actix::*;
 use actix_web::{web, App, HttpServer};
+use daas::service::author::Base64Author;
 
 fn main() {
     std::env::set_var("RUST_LOG", "warn");

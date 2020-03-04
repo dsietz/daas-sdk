@@ -1,6 +1,5 @@
 use super::*;
 use std::fmt;
-//use std::marker::PhantomData;
 use actix_web::{FromRequest, HttpRequest};
 use base64::decode;
 
@@ -10,26 +9,18 @@ use base64::decode;
 pub type LocalError = MissingAuthorError;
 
 pub trait AuthorExtractor {
-    fn extract_author(&mut self, req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<String, MissingAuthorError>;
-    fn get_name(&self) -> String;
-    fn new() -> Self;
-    fn set_name(&mut self, name: String) -> Result<Self, MissingAuthorError> 
-        where Self: std::marker::Sized;
+    fn extract_author(&mut self, req: &HttpRequest) -> Result<String, MissingAuthorError>;
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Base64Author {
-    name: String,
-}
+pub struct Author {}
 
-impl fmt::Display for Base64Author {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", serde_json::to_string(&self).unwrap())
-    }
-}
+/// Base64Author
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Base64Author {}
 
-impl AuthorExtractor for Base64Author {
-    fn extract_author(&mut self, req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<String, MissingAuthorError> {
+impl AuthorExtractor for Base64Author {  
+    fn extract_author(&mut self, req: &HttpRequest) -> Result<String, MissingAuthorError> {
         match req.headers().get("Authorization") {
             Some(hdr) => {
                 match hdr.to_str() {
@@ -63,21 +54,4 @@ impl AuthorExtractor for Base64Author {
             },
         }
     }
-    
-    fn get_name(&self) -> String {
-        self.name.clone()
-    }
-
-    fn new() -> Self {
-        Base64Author {
-            name: "Anonymous".to_string(),
-        }
-    }
-
-    fn set_name(&mut self, name: String) -> Result<Self, MissingAuthorError> {
-        self.name = name;
-        Ok(self.clone())
-    }
 }
-
-author_from_request!(Base64Author);
