@@ -3,12 +3,20 @@ extern crate actix_web;
 
 use daas::errors::{MissingAuthorError};
 use daas::service::listener::{DaaSListener, DaaSListenerService};
-use daas::service::extractor::{Author};
+use daas::service::extractor::{Author, AuthorExtractor};
 use pbd::dua::middleware::actix::*;
 use pbd::dtc::middleware::actix::*;
 use actix_web::{web, App, FromRequest, HttpRequest, HttpServer};
 
 
+/// Create your own custom Author Extractor
+/*
+impl AuthorExtractor for Author {
+    fn extract_author(&mut self, req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<String, MissingAuthorError> {
+        Ok("Mr Fuddle".to_string())
+    }
+}
+*/
 fn main() {
     std::env::set_var("RUST_LOG", "warn");
     env_logger::init();
