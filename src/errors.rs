@@ -183,3 +183,67 @@ impl fmt::Display for ValidationError {
     }
 }
 impl error::Error for ValidationError{}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_error_01() {
+        let err = BadKeyPairError;
+        assert_eq!(format!("{}",err), "Bad key pair provided.".to_string());
+    }
+
+    fn test_error_02() {
+        let err = BadAgreementError;
+        assert_eq!(format!("{}",err), "Invalid usage agreement for the DaaS document.".to_string());
+    }
+
+    fn test_error_03() {
+        let err = BrokerError;
+        assert_eq!(format!("{}",err), "Unable to broker the DaaS document.".to_string());
+    }
+
+    fn test_error_04() {
+        let err = DaaSDocError;
+        assert_eq!(format!("{}",err), "Unable to perform the operation on the DaaS document!".to_string());
+    }
+    fn test_error_05() {
+        let err = DecryptionError;
+        assert_eq!(format!("{}",err), "Unable to decrypt the DaaS data!".to_string());
+    }
+
+    fn test_error_06() {
+        let err = EncryptionError;
+        assert_eq!(format!("{}",err), "Unable to encrypt the DaaS data!".to_string());
+    }
+
+    fn test_error_07() {
+        let err = MissingAgreementError;
+        assert_eq!(format!("{}",err), "Missing a usage agreement for the DaaS document.".to_string());
+    }
+
+    fn test_error_08() {
+        let err = MissingAuthorError;
+        assert_eq!(format!("{}",err), "Missing an author for the DaaS document.".to_string());
+    }
+
+    fn test_error_09() {
+        let err = RetrieveError;
+        assert_eq!(format!("{}",err), "Unable to retrieve the DaaS document.".to_string());
+    }
+
+    fn test_error_10() {
+        let err = TamperedDataError;
+        assert_eq!(format!("{}",err), "DaaS document rejected. Tampered data data detected.".to_string());
+    }
+
+    fn test_error_11() {
+        let err = UpsertError;
+        assert_eq!(format!("{}",err), "Unable to save or update the DaaS document.".to_string());
+    }
+
+    fn test_error_12() {
+        let err = ValidationError;
+        assert_eq!(format!("{}",err), "Unable to validate the DaaS document.".to_string());
+    }
+}

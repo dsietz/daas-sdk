@@ -193,7 +193,35 @@ mod test {
     fn get_bucket() -> S3BucketMngr {
         S3BucketMngr::new(Region::UsEast1, "daas-test-bucket".to_string())
     }
+/*
+    fn get_default_daasdoc() -> DaaSDoc {
+        let src = "ButtonsRUs".to_string();
+        let uid = 1212345;
+        let cat = "button".to_string();
+        let sub = "comedy".to_string();
+        let auth = "button_app".to_string();
+        let dua = get_dua();
+        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
+        let data = String::from(r#"{"status": "completed"}"#).as_bytes().to_vec();
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data);
 
+        doc
+    }
+
+    fn get_dua() -> Vec<DUA>{
+        let mut v = Vec::new();
+        v.push( DUA {
+                    agreement_name: "billing".to_string(),
+                    location: "www.dua.org/billing.pdf".to_string(),
+                    agreed_dtm: 1553988607,
+                });
+        v
+    }
+
+    fn get_dtc(src_name: String, src_uid: usize, cat: String, subcat: String) -> Tracker {
+        Tracker::new(DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), src_uid))
+    }
+*/
     //#[ignore]
     #[test]
     fn test_genesis_processor() {
@@ -242,4 +270,24 @@ mod test {
         thread::sleep(Duration::from_secs(5));
         DaaSProcessor::stop_listening(&tx);
     }
+/*
+    #[test]
+    fn test_process_default_topics() {
+        let _ = env_logger::builder().is_test(true).try_init();
+
+        let processor = {}
+        impl DaaSGenesisProcessorService for processor{}
+
+        let my_broker = DaaSKafkaBroker::default();
+        let doc = get_default_daasdoc();
+        let topics = processor::default_topics(doc);
+
+        assert!(my_broker.broker_message(&mut my_doc, "genesis").is_ok());
+        
+
+        let stopper = DaasGenesisProcessor::run(vec!("localhost:9092".to_string()), FetchOffset::Earliest, GroupOffsetStorage::Kafka, get_bucket());
+        thread::sleep(Duration::from_secs(5));
+        DaasGenesisProcessor::stop(stopper);
+    }
+*/
 }
