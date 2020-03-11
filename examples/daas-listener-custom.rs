@@ -17,7 +17,7 @@ use daas::errors::MissingAuthorError;
 author_struct!(MyAuthor);
 
 impl AuthorExtractor for MyAuthor {
-    fn extract_author(&mut self, req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<String, MissingAuthorError> {
+    fn extract_author(&mut self, _req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<String, MissingAuthorError> {
         Ok("Knot, Tellin".to_string())
     }
     
