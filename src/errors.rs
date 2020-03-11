@@ -188,62 +188,75 @@ impl error::Error for ValidationError{}
 mod tests {
     use super::*;
 
+    #[test]
     fn test_error_01() {
         let err = BadKeyPairError.clone();
-        assert_eq!(format!("{:?}",err), "Bad key pair provided.".to_string());
+        assert_eq!(format!("{}",err), "Bad key pair provided.".to_string());
     }
 
+    #[test]
     fn test_error_02() {
         let err = BadAgreementError.clone();
-        assert_eq!(format!("{:?}",err), "Invalid usage agreement for the DaaS document.".to_string());
+        assert_eq!(format!("{}",err), "Invalid usage agreement for the DaaS document.".to_string());
     }
 
+    #[test]
     fn test_error_03() {
         let err = BrokerError.clone();
-        assert_eq!(format!("{:?}",err), "Unable to broker the DaaS document.".to_string());
+        assert_eq!(format!("{}",err), "Unable to broker the DaaS document.".to_string());
     }
 
+    #[test]
     fn test_error_04() {
         let err = DaaSDocError.clone();
-        assert_eq!(format!("{:?}",err), "Unable to perform the operation on the DaaS document!".to_string());
+        assert_eq!(format!("{}",err), "Unable to perform the operation on the DaaS document!".to_string());
     }
+
+    #[test]
     fn test_error_05() {
         let err = DecryptionError.clone();
-        assert_eq!(format!("{:?}",err), "Unable to decrypt the DaaS data!".to_string());
+        assert_eq!(format!("{}",err), "Unable to decrypt the DaaS data!".to_string());
     }
 
+    #[test]
     fn test_error_06() {
         let err = EncryptionError.clone();
-        assert_eq!(format!("{:?}",err), "Unable to encrypt the DaaS data!".to_string());
+        assert_eq!(format!("{}",err), "Unable to encrypt the DaaS data!".to_string());
     }
 
+    #[test]
     fn test_error_07() {
         let err = MissingAgreementError.clone();
-        assert_eq!(format!("{:?}",err), "Missing a usage agreement for the DaaS document.".to_string());
+        assert_eq!(format!("{}",err), "Missing a usage agreement for the DaaS document.".to_string());
     }
 
+    #[test]
     fn test_error_08() {
         let err = MissingAuthorError.clone();
-        assert_eq!(format!("{:?}",err), "Missing an author for the DaaS document.".to_string());
+        assert_eq!(format!("{}",err), "Missing an author for the DaaS document.".to_string());
     }
 
+    #[test]
     fn test_error_09() {
         let err = RetrieveError.clone();
-        assert_eq!(format!("{:?}",err), "Unable to retrieve the DaaS document.".to_string());
+        assert_eq!(format!("{}",err), "Unable to retrieve the DaaS document.".to_string());
     }
 
+    #[test]
     fn test_error_10() {
         let err = TamperedDataError.clone();
-        assert_eq!(format!("{:?}",err), "DaaS document rejected. Tampered data data detected.".to_string());
+        assert_eq!(format!("{}",err), "DaaS document rejected. Tampered data data detected.".to_string());
     }
 
+    #[test]
     fn test_error_11() {
         let err = UpsertError.clone();
-        assert_eq!(format!("{:?}",err), "Unable to save or update the DaaS document.".to_string());
+        assert_eq!(format!("{}",err), "Unable to save or update the DaaS document.".to_string());
     }
 
+    #[test]
     fn test_error_12() {
         let err = ValidationError.clone();
-        assert_eq!(format!("{:?}",err), "Unable to validate the DaaS document.".to_string());
+        assert_eq!(format!("{}",err), "Unable to validate the DaaS document.".to_string());
     }
 }
