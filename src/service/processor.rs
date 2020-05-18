@@ -8,6 +8,7 @@ use kafka::client::KafkaClient;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
+use futures::executor::block_on;
 
 pub struct DaaSProcessorMessage<'a> {
         pub offset: i64,
@@ -22,6 +23,7 @@ pub trait DaaSProcessorService {
     fn stop_listening(controller: &Sender<bool>);
 }
 
+#[async_trait]
 pub trait DaaSGenesisProcessorService {
     fn default_topics(doc: &DaaSDoc) -> Vec<String> {
         let mut topics = Vec::new();
@@ -58,7 +60,7 @@ pub trait DaaSGenesisProcessorService {
         Ok(1)
     }
 
-    fn provision_document<T: S3BucketManager + Clone>(mut msg: DaaSProcessorMessage, client: Option<KafkaClient>, s3_bucket: Option<&T>) -> Result<i32, DaaSProcessingError> {
+    fn provision_document<'a, T: S3BucketManager + Clone + std::marker::Send + std::marker::Sync>(mut msg: DaaSProcessorMessage<'a> , client: Option<KafkaClient>, s3_bucket: Option<&T>) -> Result<i32, DaaSProcessingError> {
         //let send_to_topic: Option<&str> = Some("newbie");
 
         // 1. Store the DaaSDoc in S3 Bucket
@@ -66,21 +68,22 @@ pub trait DaaSGenesisProcessorService {
 
         let content: StreamingBody = msg.doc.serialize().into_bytes().into();
 
-        match s3_bucket.unwrap().clone().upload_file(format!("{}/{}.daas", msg.topic, msg.doc._id), content) {
-            Ok(_s) => {},
-            Err(err) => {
-                error!("Could not place DaasDoc {} in S3 storage. Error: {:?}", msg.doc._id, err);
+        match block_on(s3_bucket.unwrap().clone().upload_file(format!("{}/{}.daas", msg.topic, msg.doc._id), content)) {
+            Ok(_s) => {
+                // 2. Broker the DaaSDoc if a Client is provided and use dynamic topic
+                match client {
+                    Some(clnt) => {
+                        info!("Brokering document {} ... ", msg.doc._id);
+                        // this needs to await this call
+                        Self::broker_document(clnt, msg.doc.clone(), None)
+                    },
+                    None => Ok(1),
+                }
+            },
+            Err(e) => {
+                error!("Could not place DaasDoc {} in S3 storage. Error: {:?}", msg.doc._id, e);
                 return Err(DaaSProcessingError::UpsertError)
             },
-        }
-
-        // 2. Broker the DaaSDoc if a Client is provided and use dynamic topic
-        match client {
-            Some(clnt) => {
-                info!("Brokering document {} ... ", msg.doc._id);
-                Self::broker_document(clnt, msg.doc.clone(), None)
-            },
-            None => Ok(1),
         }        
     }
 

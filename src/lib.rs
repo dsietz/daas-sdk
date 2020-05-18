@@ -15,6 +15,8 @@ extern crate base64;
 use log::*;
 use std::env;
 use std::time::{SystemTime};
+use futures::future::{ok, err, Ready};
+use async_trait::async_trait;
 
 pub const DELIMITER: &'static str = "~";
 

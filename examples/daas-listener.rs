@@ -7,7 +7,8 @@ use pbd::dua::middleware::actix::*;
 use pbd::dtc::middleware::actix::*;
 use actix_web::{web, App, HttpServer};
 
-fn main() {
+#[actix_rt::main]
+async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "warn");
     env_logger::init();
     
@@ -25,5 +26,5 @@ fn main() {
     .bind("localhost:8088")
     .unwrap()
     .run()
-    .unwrap();
+    .await
 }

@@ -26,9 +26,15 @@ For software development teams who implement the [Data as a Service (DaaS)](http
 
 ## What's New
 
-Here's whats new in 0.0.4:
+Here's whats new in 0.1.0:
 
-1. Data Processor service module
+We've upgraded to more current versions of our crate's dependencies:
+- actix-rt = "1.1"
+- actix-web = "2.0"
+- futures = "0.3"
+- pbd = "0.2"
+- rusoto_core = "0.43"
+- rusoto_s3 = "0.43"
 
 ## Features
 

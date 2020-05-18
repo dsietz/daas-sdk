@@ -9,6 +9,7 @@ use actix_web::{web, App, HttpServer};
 /// Build our own Author Extractor
 use serde::{Serialize, Deserialize};
 use actix_web::{FromRequest, HttpRequest};
+use futures::future::{ok, err, Ready};
 use daas::macros;
 use daas::service::extractor::{AuthorExtractor, LocalError};
 use daas::errors::MissingAuthorError;
@@ -30,7 +31,8 @@ impl AuthorExtractor for MyAuthor {
 /// Use macros to write the implmentation of the FromRequest trait
 author_from_request!(MyAuthor);
 
-fn main() {
+#[actix_rt::main]
+async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "warn");
     env_logger::init();
     
@@ -48,5 +50,5 @@ fn main() {
     .bind("localhost:8088")
     .unwrap()
     .run()
-    .unwrap();
+    .await
 }

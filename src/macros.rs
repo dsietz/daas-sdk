@@ -1,4 +1,5 @@
 use std::time::{SystemTime};
+use futures::future::{ok, err, Ready};
 
 #[macro_export]
 macro_rules! author_struct {
@@ -45,7 +46,7 @@ macro_rules! author_from_request {
     ( $a:ty ) => {
         impl FromRequest for $a {
             type Config = ();
-            type Future = Result<Self, Self::Error>;
+            type Future = Ready<Result<Self, Self::Error>>;
             type Error = LocalError;
             // convert request to future self
             fn from_request(req: &HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {    
@@ -54,16 +55,16 @@ macro_rules! author_from_request {
                 match author.extract_author(req, payload) {
                     Ok(name) => {
                         match author.set_name(name) {
-                            Ok(_) => Ok(author),
-                            Err(err) => {
-                                error!("{}", err);
-                                Err(err)
+                            Ok(_) => ok(author),
+                            Err(e) => {
+                                error!("{}", e);
+                                err(e)
                             },
                         }
                     },
-                    Err(err) => {
-                        error!("{}", err);
-                        Err(err)
+                    Err(e) => {
+                        error!("{}", e);
+                        err(e)
                     },
                 }
             }
