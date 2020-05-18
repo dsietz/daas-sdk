@@ -239,6 +239,8 @@ mod test {
         assert_eq!(topics[3], "ButtonsRUs".to_string());
     }
 
+    //can only be tested if there is access to the S3 bucket
+    #[ignore]
     #[test]
     fn test_genesis_processor() {
         let _ = env_logger::builder().is_test(true).try_init();

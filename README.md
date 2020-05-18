@@ -29,6 +29,7 @@ For software development teams who implement the [Data as a Service (DaaS)](http
 Here's whats new in 0.1.0:
 
 We've upgraded to more current versions of our crate's dependencies:
+- async-trait = "0.1.31"
 - actix-rt = "1.1"
 - actix-web = "2.0"
 - futures = "0.3"
