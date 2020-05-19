@@ -3,7 +3,7 @@
 [![Docs.rs](https://docs.rs/daas/badge.svg)](https://docs.rs/daas)
 
 Linux: [![Build Status](https://travis-ci.org/dsietz/daas-sdk.svg?branch=master)](https://travis-ci.org/dsietz/daas-sdk)
-Windows: [![Build status](https://ci.appveyor.com/api/projects/status/ws0gwwlr2hgiqsiv?svg=true)](https://ci.appveyor.com/project/dsietz/daas-sdk)
+Windows: [![Build status](https://ci.appveyor.com/api/projects/status/ws0gwwlr2hgiqsiv/branch/master?svg=true)](https://ci.appveyor.com/project/dsietz/daas-sdk)
 
 # Data as a Service (DaaS) SDK
 
@@ -26,9 +26,16 @@ For software development teams who implement the [Data as a Service (DaaS)](http
 
 ## What's New
 
-Here's whats new in 0.0.4:
+Here's whats new in 0.1.0:
 
-1. Data Processor service module
+We've upgraded to more current versions of our crate's dependencies:
+- async-trait = "0.1.31"
+- actix-rt = "1.1"
+- actix-web = "2.0"
+- futures = "0.3"
+- pbd = "0.2"
+- rusoto_core = "0.43"
+- rusoto_s3 = "0.43"
 
 ## Features
 

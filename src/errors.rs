@@ -1,5 +1,6 @@
 use std::error;
 use std::fmt;
+use actix_web::ResponseError;
 
 // struct
 #[derive(Debug, Clone)]
@@ -22,6 +23,9 @@ pub struct EncryptionError;
 
 #[derive(Debug, Clone)]
 pub struct MissingAgreementError;
+
+#[derive(Debug, Clone)]
+pub struct MissingAuthorError;
 
 #[derive(Debug, Clone)]
 pub struct RetrieveError;
@@ -61,7 +65,6 @@ pub mod daaserror {
     #[derive(Debug)]
     pub enum DaaSDocError {
         DaaSDocError,
-        
     }
 
     #[derive(Debug)]
@@ -83,6 +86,7 @@ pub mod daaserror {
     #[derive(Debug)]
     pub enum DaaSProcessingError {
         BrokerError,
+        MissingAuthorError,
         RetrieveError,
         UpsertError,
     }
@@ -137,8 +141,6 @@ impl fmt::Display for EncryptionError {
 }
 impl error::Error for EncryptionError {}
 
-
-
 impl fmt::Display for MissingAgreementError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Missing a usage agreement for the DaaS document.")
@@ -146,6 +148,13 @@ impl fmt::Display for MissingAgreementError {
 }
 impl error::Error for MissingAgreementError{}
 
+impl fmt::Display for MissingAuthorError{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Missing an author for the DaaS document.")
+    }
+}
+impl error::Error for MissingAuthorError{}
+impl ResponseError for MissingAuthorError{}
 
 impl fmt::Display for RetrieveError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -174,3 +183,80 @@ impl fmt::Display for ValidationError {
     }
 }
 impl error::Error for ValidationError{}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_error_01() {
+        let err = BadKeyPairError.clone();
+        assert_eq!(format!("{}",err), "Bad key pair provided.".to_string());
+    }
+
+    #[test]
+    fn test_error_02() {
+        let err = BadAgreementError.clone();
+        assert_eq!(format!("{}",err), "Invalid usage agreement for the DaaS document.".to_string());
+    }
+
+    #[test]
+    fn test_error_03() {
+        let err = BrokerError.clone();
+        assert_eq!(format!("{}",err), "Unable to broker the DaaS document.".to_string());
+    }
+
+    #[test]
+    fn test_error_04() {
+        let err = DaaSDocError.clone();
+        assert_eq!(format!("{}",err), "Unable to perform the operation on the DaaS document!".to_string());
+    }
+
+    #[test]
+    fn test_error_05() {
+        let err = DecryptionError.clone();
+        assert_eq!(format!("{}",err), "Unable to decrypt the DaaS data!".to_string());
+    }
+
+    #[test]
+    fn test_error_06() {
+        let err = EncryptionError.clone();
+        assert_eq!(format!("{}",err), "Unable to encrypt the DaaS data!".to_string());
+    }
+
+    #[test]
+    fn test_error_07() {
+        let err = MissingAgreementError.clone();
+        assert_eq!(format!("{}",err), "Missing a usage agreement for the DaaS document.".to_string());
+    }
+
+    #[test]
+    fn test_error_08() {
+        let err = MissingAuthorError.clone();
+        assert_eq!(format!("{}",err), "Missing an author for the DaaS document.".to_string());
+    }
+
+    #[test]
+    fn test_error_09() {
+        let err = RetrieveError.clone();
+        assert_eq!(format!("{}",err), "Unable to retrieve the DaaS document.".to_string());
+    }
+
+    #[test]
+    fn test_error_10() {
+        let err = TamperedDataError.clone();
+        assert_eq!(format!("{}",err), "DaaS document rejected. Tampered data data detected.".to_string());
+    }
+
+    #[test]
+    fn test_error_11() {
+        let err = UpsertError.clone();
+        assert_eq!(format!("{}",err), "Unable to save or update the DaaS document.".to_string());
+    }
+
+    #[test]
+    fn test_error_12() {
+        let err = ValidationError.clone();
+        assert_eq!(format!("{}",err), "Unable to validate the DaaS document.".to_string());
+    }
+}

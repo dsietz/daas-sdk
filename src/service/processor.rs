@@ -3,12 +3,12 @@ use crate::doc::*;
 use crate::errors::daaserror::{DaaSProcessingError};
 use crate::eventing::broker::{DaaSKafkaProcessor, DaaSKafkaBroker};
 use crate::storage::s3::*;
-use rusoto_core::Region;
 use rusoto_s3::{StreamingBody};
 use kafka::client::KafkaClient;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
+use futures::executor::block_on;
 
 pub struct DaaSProcessorMessage<'a> {
         pub offset: i64,
@@ -23,6 +23,7 @@ pub trait DaaSProcessorService {
     fn stop_listening(controller: &Sender<bool>);
 }
 
+#[async_trait]
 pub trait DaaSGenesisProcessorService {
     fn default_topics(doc: &DaaSDoc) -> Vec<String> {
         let mut topics = Vec::new();
@@ -59,7 +60,7 @@ pub trait DaaSGenesisProcessorService {
         Ok(1)
     }
 
-    fn provision_document<T: S3BucketManager + Clone>(mut msg: DaaSProcessorMessage, client: Option<KafkaClient>, s3_bucket: Option<&T>) -> Result<i32, DaaSProcessingError> {
+    fn provision_document<'a, T: S3BucketManager + Clone + std::marker::Send + std::marker::Sync>(mut msg: DaaSProcessorMessage<'a> , client: Option<KafkaClient>, s3_bucket: Option<&T>) -> Result<i32, DaaSProcessingError> {
         //let send_to_topic: Option<&str> = Some("newbie");
 
         // 1. Store the DaaSDoc in S3 Bucket
@@ -68,20 +69,21 @@ pub trait DaaSGenesisProcessorService {
         let content: StreamingBody = msg.doc.serialize().into_bytes().into();
 
         match s3_bucket.unwrap().clone().upload_file(format!("{}/{}.daas", msg.topic, msg.doc._id), content) {
-            Ok(_s) => {},
-            Err(err) => {
-                error!("Could not place DaasDoc {} in S3 storage. Error: {:?}", msg.doc._id, err);
+            Ok(_s) => {
+                // 2. Broker the DaaSDoc if a Client is provided and use dynamic topic
+                match client {
+                    Some(clnt) => {
+                        info!("Brokering document {} ... ", msg.doc._id);
+                        // this needs to await this call
+                        Self::broker_document(clnt, msg.doc.clone(), None)
+                    },
+                    None => Ok(1),
+                }
+            },
+            Err(e) => {
+                error!("Could not place DaasDoc {} in S3 storage. Error: {:?}", msg.doc._id, e);
                 return Err(DaaSProcessingError::UpsertError)
             },
-        }
-
-        // 2. Broker the DaaSDoc if a Client is provided and use dynamic topic
-        match client {
-            Some(clnt) => {
-                info!("Brokering document {} ... ", msg.doc._id);
-                Self::broker_document(clnt, msg.doc.clone(), None)
-            },
-            None => Ok(1),
         }        
     }
 
@@ -189,12 +191,56 @@ mod test {
     use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
     use std::time::Duration;
     use std::thread;
+    use rusoto_core::Region;
+    use pbd::dua::DUA;
+    use pbd::dtc::Tracker;
 
     fn get_bucket() -> S3BucketMngr {
         S3BucketMngr::new(Region::UsEast1, "daas-test-bucket".to_string())
     }
 
-    //#[ignore]
+    fn get_default_daasdoc() -> DaaSDoc {
+        let src = "ButtonsRUs".to_string();
+        let uid = 1212345;
+        let cat = "button".to_string();
+        let sub = "comedy".to_string();
+        let auth = "button_app".to_string();
+        let dua = get_dua();
+        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
+        let data = String::from(r#"{"status": "completed"}"#).as_bytes().to_vec();
+        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data);
+
+        doc
+    }
+
+    fn get_dua() -> Vec<DUA>{
+        let mut v = Vec::new();
+        v.push( DUA {
+                    agreement_name: "billing".to_string(),
+                    location: "www.dua.org/billing.pdf".to_string(),
+                    agreed_dtm: 1553988607,
+                });
+        v
+    }
+
+    fn get_dtc(src_name: String, src_uid: usize, cat: String, subcat: String) -> Tracker {
+        Tracker::new(DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), src_uid))
+    }
+
+    #[test]
+    fn test_default_topics() {
+        struct MySrv {}
+        impl DaaSGenesisProcessorService for MySrv{}
+        let topics = MySrv::default_topics(&get_default_daasdoc());
+        assert_eq!(topics.len(), 4);
+        assert_eq!(topics[0], "button.comedy.ButtonsRUs".to_string());
+        assert_eq!(topics[1], "button".to_string());
+        assert_eq!(topics[2], "button.comedy".to_string());
+        assert_eq!(topics[3], "ButtonsRUs".to_string());
+    }
+
+    //can only be tested if there is access to the S3 bucket
+    #[ignore]
     #[test]
     fn test_genesis_processor() {
         let _ = env_logger::builder().is_test(true).try_init();

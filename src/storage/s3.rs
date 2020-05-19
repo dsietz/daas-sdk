@@ -1,6 +1,8 @@
+use super::*;
 use crate::errors::daaserror::DaaSStorageError;
 use rusoto_core::Region;
 use rusoto_s3::{S3, S3Client, PutObjectRequest, StreamingBody};
+use tokio::runtime::Runtime;
 
 /// Credentials are read from the environment vcariables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
 
@@ -156,7 +158,8 @@ impl S3BucketManager for S3BucketMngr {
             ..Default::default()
         };
     
-        match s3_client.put_object(req).sync() {
+        let mut rt = Runtime::new().unwrap();
+        match rt.block_on(s3_client.put_object(req)) {
             Ok(_t) => Ok(1),
             Err(_err) => Err(DaaSStorageError::UpsertError),
         }

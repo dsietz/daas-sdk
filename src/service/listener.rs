@@ -1,9 +1,10 @@
 use super::*;
+use std::thread;
 use crate::eventing::broker::{DaaSKafkaBroker, DaaSKafkaProcessor};
 use crate::doc::*;
-use crate::storage::{DaaSDocStorage};
-use crate::storage::local::{LocalStorage};
-use std::thread;
+use crate::storage::DaaSDocStorage;
+use crate::storage::local::LocalStorage;
+use super::extractor::AuthorExtractor;
 
 pub trait DaaSListenerService {
     fn get_service_health_path() -> String {
@@ -18,7 +19,7 @@ pub trait DaaSListenerService {
                 .body(r#"{"status":"OK"}"#)
     }
     // what about using a generic with the FromRequest trait to pass the Author
-    fn index(params: Path<Info>, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse;
+    fn index<A: AuthorExtractor>(params: Path<Info>, author: A, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse;
 }
 
 #[derive(Deserialize)]
@@ -122,7 +123,7 @@ impl DaaSListener {
 }
 
 impl DaaSListenerService for DaaSListener {
-    fn index(params: Path<Info>, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse {
+    fn index<A: AuthorExtractor>(params: Path<Info>, author: A, duas: DUAs, tracker: Tracker, body: String, req: HttpRequest) -> HttpResponse {
         let cat: String = params.category.clone();
         let subcat: String = params.subcategory.clone();
         let srcnme: String = params.source_name.clone();
@@ -133,8 +134,7 @@ impl DaaSListenerService for DaaSListener {
             None => "unknown",
         };
 
-        // issue #8 - https://github.com/dsietz/daas-sdk/issues/8
-        let usr = "myself".to_string();
+        let usr = author.get_name();
         let mut doc = DaaSDoc::new(srcnme, srcuid, cat, subcat, usr, duas.vec(), tracker.clone(), body.as_bytes().to_vec());
         doc.add_meta("content-type".to_string(), content_type.to_string());
 
@@ -160,10 +160,19 @@ mod test {
 /*
     #[test]
     fn test_extract_auth_ok() {
-        let srvc = DaaSListener{};
-        let rqst = HttpRequest{};
+        /*
+        let req = test::TestRequest::get().uri("/")
+            .header("Authorization", base64::encode(b"myself:password"))
+            .to_request();
+            */
 
-        assert_eq!(srvc::extract_author(rqst), "myself");
+        //let uri = Uri::from_shared("http://example.com/foo".to_string().as_bytes()).unwrap();
+        let uri = "http://example.com/foo".parse::<Uri>().unwrap();
+        let mut headers = HeaderMap::new();
+        headers.insert(HeaderName::from_lowercase(b"authorization").unwrap(), HeaderValue::from_str(&base64::encode(b"myself:password")).unwrap());
+        let req = actix_web::HttpRequest::new(Method::GET, uri, Version::HTTP_2,headers, None);
+
+        assert_eq!(DaaSListener::extract_author(req), "myself");
     }
 */
     #[test]

@@ -29,7 +29,7 @@ fn call(url: Url, auth: &str, mut dua: Vec<DUA>, tracker: Tracker, file_path: &s
     let hdr0 = header_value("Content-Type", "Content-Type", get_content_type(file_path).unwrap());
     let hdr1 = header_value("Data-Usage-Agreement", "Data-Usage-Agreement", &format!("[{}]", &dua[0].serialize()));
     let hdr2 = header_value("Data-Tracker-Chain", "Data-Tracker-Chain", &base64::encode(&tracker.serialize()));
-    let hdr3 = header_value("Author", "Author", &base64::encode(auth));
+    let hdr3 = header_value("Authorization", "Author", &format!("Basic {}", &base64::encode(auth)));
 
     header.push(hdr0).expect("Could not push header 0!");
     header.push(hdr1).expect("Could not push header 1!");

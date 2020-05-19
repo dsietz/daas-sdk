@@ -10,10 +10,14 @@ extern crate openssl;
 extern crate actix_web;
 extern crate rusoto_core;
 extern crate rusoto_s3;
+extern crate base64;
+extern crate tokio;
 
 use log::*;
 use std::env;
 use std::time::{SystemTime};
+use futures::future::{ok, err, Ready};
+use async_trait::async_trait;
 
 pub const DELIMITER: &'static str = "~";
 

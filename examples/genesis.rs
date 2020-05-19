@@ -9,7 +9,7 @@ use daas::service::processor::{DaasGenesisProcessor, DaaSGenesisProcessorService
 use daas::storage::s3::{S3BucketManager, S3BucketMngr};
 
 // NOTE: Modify the Bucket name to match your bucket
-// Credentials are read from the environment vcariables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+// Credentials are read from the environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
 pub const BUCKET_NAME: &'static str = "daas-test-bucket";
 
 fn get_bucket() -> S3BucketMngr {
