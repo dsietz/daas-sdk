@@ -68,7 +68,7 @@ pub trait DaaSGenesisProcessorService {
 
         let content: StreamingBody = msg.doc.serialize().into_bytes().into();
 
-        match block_on(s3_bucket.unwrap().clone().upload_file(format!("{}/{}.daas", msg.topic, msg.doc._id), content)) {
+        match s3_bucket.unwrap().clone().upload_file(format!("{}/{}.daas", msg.topic, msg.doc._id), content) {
             Ok(_s) => {
                 // 2. Broker the DaaSDoc if a Client is provided and use dynamic topic
                 match client {

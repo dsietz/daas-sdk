@@ -2,6 +2,7 @@ use super::*;
 use crate::errors::daaserror::DaaSStorageError;
 use rusoto_core::Region;
 use rusoto_s3::{S3, S3Client, PutObjectRequest, StreamingBody};
+use tokio::runtime::Runtime;
 
 /// Credentials are read from the environment vcariables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
 
@@ -16,15 +17,13 @@ pub struct S3BucketMngr {
     pub arn: String,
 }
 
-#[async_trait]
 pub trait S3BucketManager {
     fn new(region: Region, bucket_name: String) -> S3BucketMngr;
     fn from_arn(region: Region, bucket_arn: String) -> S3BucketMngr;
     fn parse_arn(arn: String) -> Vec<Option<String>>;
-    async fn upload_file(self, content_key: String, content: StreamingBody) -> Result<i8, DaaSStorageError>;
+    fn upload_file(self, content_key: String, content: StreamingBody) -> Result<i8, DaaSStorageError>;
 }
 
-#[async_trait]
 impl S3BucketManager for S3BucketMngr {
     /// Constructs a S3BucketMngr object
     /// 
@@ -149,7 +148,7 @@ impl S3BucketManager for S3BucketMngr {
     ///     */
     /// }
     /// ```
-    async fn upload_file(self, content_key: String, content: StreamingBody) -> Result<i8, DaaSStorageError>{
+    fn upload_file(self, content_key: String, content: StreamingBody) -> Result<i8, DaaSStorageError>{
         let s3_client = S3Client::new(Region::UsEast1);
         let req = PutObjectRequest {
             bucket: self.bucket,
@@ -159,7 +158,8 @@ impl S3BucketManager for S3BucketMngr {
             ..Default::default()
         };
     
-        match s3_client.put_object(req).await {
+        let mut rt = Runtime::new().unwrap();
+        match rt.block_on(s3_client.put_object(req)) {
             Ok(_t) => Ok(1),
             Err(_err) => Err(DaaSStorageError::UpsertError),
         }
@@ -169,7 +169,6 @@ impl S3BucketManager for S3BucketMngr {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use futures::executor::block_on;
 
     #[test]
     fn test_from_arn(){
@@ -195,7 +194,7 @@ mod tests {
         let bckt = S3BucketMngr::new(Region::UsEast1, "daas-test-bucket".to_string());
         let content: StreamingBody = String::from("this is a message....").into_bytes().into();
 
-        let rslt = block_on(bckt.upload_file("tmp/mystuff/new-record2.txt".to_string(), content)).unwrap();
+        let rslt = bckt.upload_file("tmp/mystuff/new-record2.txt".to_string(), content).unwrap();
         assert_eq!(rslt, 1);
     }
 }

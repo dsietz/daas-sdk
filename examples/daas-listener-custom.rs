@@ -14,7 +14,7 @@ use daas::macros;
 use daas::service::extractor::{AuthorExtractor, LocalError};
 use daas::errors::MissingAuthorError;
 
-/// Use macros to crate our structure
+// Use macros to crate our structure
 author_struct!(MyAuthor);
 
 impl AuthorExtractor for MyAuthor {
@@ -22,13 +22,13 @@ impl AuthorExtractor for MyAuthor {
         Ok("Knot, Tellin".to_string())
     }
     
-    /// Use macros to write the default functions
+    // Use macros to write the default functions
     author_fn_get_name!();
     author_fn_new!();
     author_fn_set_name!();
 }
 
-/// Use macros to write the implmentation of the FromRequest trait
+// Use macros to write the implmentation of the FromRequest trait
 author_from_request!(MyAuthor);
 
 #[actix_rt::main]

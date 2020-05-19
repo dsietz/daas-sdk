@@ -11,6 +11,7 @@ extern crate actix_web;
 extern crate rusoto_core;
 extern crate rusoto_s3;
 extern crate base64;
+extern crate tokio;
 
 use log::*;
 use std::env;
