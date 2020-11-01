@@ -1,4 +1,5 @@
 use super::*;
+use std::env;
 use std::fs;
 use std::fs::{File};
 use std::io::prelude::*;
@@ -240,6 +241,34 @@ impl LocalStorage {
         let dir: Vec<&str> = doc_uuid.split(DELIMITER).collect();
         format!("{}/{}/{}/{}/{}",&self.path, dir[0], dir[1], dir[2], dir[3])
     }
+    
+    /// Reads the environment variable `DAAS_LOCAL_STORAGE` and uses it as the local storage path. 
+    /// If the environment variable doesn't exist, then it uses the temporary directory (in order, the TMP, TEMP, USERPROFILE)
+    ///   
+    /// #Example
+    ///
+    /// ```
+    /// extern crate daas;
+    ///
+    /// use daas::storage::local::LocalStorage;
+    /// use std::env;
+    ///
+    /// fn main() {
+    ///     env::set_var("DAAS_LOCAL_STORAGE", "./tmp");
+    ///     let storage = LocalStorage::get_local_path();
+    ///     assert_eq!("./tmp".to_string(), storage);
+    /// }
+    /// ```
+    pub fn get_local_path() -> String {
+        match env::var("DAAS_LOCAL_STORAGE") {
+            Ok(val) => {
+                val
+            },
+            Err(_e) => {
+                env::temp_dir().to_str().unwrap().to_string()
+            }
+        }
+    }
 
     fn make_doc_uuid(doc_id: String, rev: String) -> String {
         format!("{}{}{}", doc_id, DELIMITER, rev)
@@ -366,6 +395,21 @@ mod tests {
 
         doc
     }
+
+    #[test]
+    fn test_get_local_storage_path_env_set() {
+        env::set_var("DAAS_LOCAL_STORAGE", "C:\tmp");
+        let storage = LocalStorage::get_local_path();
+        assert_eq!("C:\tmp".to_string(), storage);
+    }
+
+    #[test]
+    fn test_get_local_storage_path_env_unset() {
+        env::remove_var("DAAS_LOCAL_STORAGE");
+        let storage = LocalStorage::get_local_path();
+        assert_eq!(env::temp_dir().to_str().unwrap().to_string(), storage);
+    }
+
 
     #[test]
     fn test_make_doc_uuid() {

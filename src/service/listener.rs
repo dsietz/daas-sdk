@@ -79,8 +79,7 @@ impl DaaSListener {
         };
 
         // store a local copy so data isn't lost
-        // Issue #23 - https://github.com/dsietz/daas-sdk/issues/23
-        let storage = LocalStorage::new("./tests".to_string());
+        let storage = LocalStorage::new(LocalStorage::get_local_path());
         let doc = match storage.upsert_daas_doc(doc) {
             Ok(d) => {
                 info!("DaaS docoument {} has been successfully upserted.", d.clone()._id);
