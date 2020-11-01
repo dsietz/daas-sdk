@@ -7,9 +7,11 @@ use pbd::dua::middleware::actix::*;
 use pbd::dtc::middleware::actix::*;
 use actix_web::{web, App, HttpServer};
 
-#[actix_rt::main]
+#[actix_web::main]
 async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "warn");
+    // set the environment variable for overwriting the default location for local storage 
+    //std::env::set_var("DAAS_LOCAL_STORAGE", "C:\\tmp");
     env_logger::init();
     
     HttpServer::new(
