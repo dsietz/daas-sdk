@@ -1,7 +1,7 @@
 use super::*;
 use crate::errors::daaserror::DaaSStorageError;
 use rusoto_core::Region;
-use rusoto_s3::{S3, S3Client, PutObjectRequest, StreamingBody};
+use rusoto_s3::{PutObjectRequest, S3Client, StreamingBody, S3};
 use tokio::runtime::Runtime;
 
 /// Credentials are read from the environment vcariables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
@@ -21,17 +21,21 @@ pub trait S3BucketManager {
     fn new(region: Region, bucket_name: String) -> S3BucketMngr;
     fn from_arn(region: Region, bucket_arn: String) -> S3BucketMngr;
     fn parse_arn(arn: String) -> Vec<Option<String>>;
-    fn upload_file(self, content_key: String, content: StreamingBody) -> Result<i8, DaaSStorageError>;
+    fn upload_file(
+        self,
+        content_key: String,
+        content: StreamingBody,
+    ) -> Result<i8, DaaSStorageError>;
 }
 
 impl S3BucketManager for S3BucketMngr {
     /// Constructs a S3BucketMngr object
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * region: Region - The enum that represents the AWS region of the bucket, (e.g.: Region::UsEast1) - See rusoto_core documentation for further information.</br>
     /// * bucket_name: String - The name of the S3 bucket.</br>
-    /// 
+    ///
     /// #Example
     ///
     /// ```
@@ -50,17 +54,17 @@ impl S3BucketManager for S3BucketMngr {
         S3BucketMngr {
             region: region,
             bucket: bucket_name.clone(),
-            arn: format!("arn:aws:s3:::{}",bucket_name).to_string(),
+            arn: format!("arn:aws:s3:::{}", bucket_name).to_string(),
         }
     }
 
     /// Constructs a S3BucketMngr object based on it's ARN
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * region: Region - The enum that represents the AWS region of the bucket, (e.g.: Region::UsEast1) - See rusoto_core documentation for further information.</br>
     /// * bucket_arn: String - The arn of the S3 bucket.</br>
-    /// 
+    ///
     /// #Example
     ///
     /// ```
@@ -77,7 +81,7 @@ impl S3BucketManager for S3BucketMngr {
     /// ```
     fn from_arn(region: Region, bucket_arn: String) -> S3BucketMngr {
         let mut arn = S3BucketMngr::parse_arn(bucket_arn.clone());
-		S3BucketMngr {
+        S3BucketMngr {
             region: region,
             bucket: arn[5].take().unwrap(),
             arn: bucket_arn,
@@ -86,11 +90,11 @@ impl S3BucketManager for S3BucketMngr {
 
     /// Parses an ARN for a S3 bucket into its components
     /// (see https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * arn: String - The arn of the S3 bucket.</br>
-    /// 
+    ///
     /// #Example
     ///
     /// ```
@@ -104,28 +108,27 @@ impl S3BucketManager for S3BucketMngr {
     ///    assert_eq!(arn_parts[5].take().unwrap(), "daas-test-bucket".to_string());
     /// }
     /// ```
-    fn parse_arn(arn: String) -> Vec<Option<String>>{
+    fn parse_arn(arn: String) -> Vec<Option<String>> {
         let mut parts = Vec::new();
-        
+
         for part in arn.split(":").collect::<Vec<&str>>().iter() {
             if part.len() == 0 {
                 parts.push(None);
-            }
-            else {
+            } else {
                 parts.push(Some(part.to_string()));
             }
         }
-    
+
         parts
     }
 
     /// Uploads a file to the S3 Bucket
     ///
     /// # Arguments
-    /// 
+    ///
     /// * content_key: String - The S3 Bucket prefix key to use for the document, (e.g.: "myfolder/myfile.txt").</br>
     /// * content: StreamingBody - The ByteStream that is the content of the file.</br>
-    /// 
+    ///
     /// #Example
     ///
     /// ```
@@ -148,7 +151,11 @@ impl S3BucketManager for S3BucketMngr {
     ///     */
     /// }
     /// ```
-    fn upload_file(self, content_key: String, content: StreamingBody) -> Result<i8, DaaSStorageError>{
+    fn upload_file(
+        self,
+        content_key: String,
+        content: StreamingBody,
+    ) -> Result<i8, DaaSStorageError> {
         let s3_client = S3Client::new(Region::UsEast1);
         let req = PutObjectRequest {
             bucket: self.bucket,
@@ -157,7 +164,7 @@ impl S3BucketManager for S3BucketMngr {
             acl: Some("private".to_string()),
             ..Default::default()
         };
-    
+
         let mut rt = Runtime::new().unwrap();
         match rt.block_on(s3_client.put_object(req)) {
             Ok(_t) => Ok(1),
@@ -171,9 +178,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_from_arn(){
-        let bckt = S3BucketMngr::from_arn(Region::UsEast1, "arn:aws:s3:::daas-test-bucket".to_string());
-        
+    fn test_from_arn() {
+        let bckt =
+            S3BucketMngr::from_arn(Region::UsEast1, "arn:aws:s3:::daas-test-bucket".to_string());
+
         assert_eq!(bckt.bucket, "daas-test-bucket".to_string());
         assert_eq!(bckt.arn, "arn:aws:s3:::daas-test-bucket".to_string());
         assert_eq!(bckt.region, Region::UsEast1);
@@ -194,7 +202,9 @@ mod tests {
         let bckt = S3BucketMngr::new(Region::UsEast1, "daas-test-bucket".to_string());
         let content: StreamingBody = String::from("this is a message....").into_bytes().into();
 
-        let rslt = bckt.upload_file("tmp/mystuff/new-record2.txt".to_string(), content).unwrap();
+        let rslt = bckt
+            .upload_file("tmp/mystuff/new-record2.txt".to_string(), content)
+            .unwrap();
         assert_eq!(rslt, 1);
     }
 }

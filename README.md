@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/dsietz/daas-sdk/badge.svg?branch=master)](https://coveralls.io/github/dsietz/daas-sdk?branch=master)
 [![Docs.rs](https://docs.rs/daas/badge.svg)](https://docs.rs/daas)
 
-Linux: [![Build Status](https://travis-ci.org/dsietz/daas-sdk.svg?branch=master)](https://travis-ci.org/dsietz/daas-sdk)
+Linux: [![Build Status](https://github.com/dsietz/daas-sdk/actions/workflows/master.yaml/badge.svg)](https://github.com/dsietz/daas-sdk/actions/workflows/master.yaml)
 Windows: [![Build status](https://ci.appveyor.com/api/projects/status/ws0gwwlr2hgiqsiv/branch/master?svg=true)](https://ci.appveyor.com/project/dsietz/daas-sdk)
 
 # Data as a Service (DaaS) SDK

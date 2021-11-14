@@ -1,7 +1,7 @@
 use super::*;
 use std::env;
 use std::fs;
-use std::fs::{File};
+use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
@@ -14,7 +14,7 @@ pub struct LocalStorage {
 impl Default for LocalStorage {
     // provide a LocalStorage object with the default values
     fn default() -> Self {
-        LocalStorage{
+        LocalStorage {
             path: ".".to_string(),
         }
     }
@@ -22,15 +22,15 @@ impl Default for LocalStorage {
 
 impl DaaSDocStorage for LocalStorage {
     /// Save a Daas document into persistant storage based upon the revision of the document
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * doc: DaaSDoc - The new DaaS document to save.</br>
-    /// 
+    ///
     /// #Example
     ///
     /// ```
-    /// #[macro_use] 
+    /// #[macro_use]
     /// extern crate serde_json;
     /// extern crate pbd;
     /// extern crate daas;
@@ -55,11 +55,11 @@ impl DaaSDocStorage for LocalStorage {
     ///     
     ///     let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker, data);
     ///     let storage = LocalStorage::new("./tmp".to_string());
-    /// 
+    ///
     ///     assert!(storage.upsert_daas_doc(doc).is_ok());
     /// }
     /// ```
-    fn upsert_daas_doc(&self, mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
+    fn upsert_daas_doc(&self, mut doc: DaaSDoc) -> Result<DaaSDoc, UpsertError> {
         // make sure the DaaS document provided is the latest revision
         let latest_rev = self.latest_rev(doc._id.clone());
 
@@ -67,62 +67,77 @@ impl DaaSDocStorage for LocalStorage {
             Some(r) => {
                 if latest_rev != r {
                     warn!("The DaaSDoc doesn't have the latest revision!");
-                    return Err(UpsertError)
+                    return Err(UpsertError);
                 }
-            },
-            None => {},
+            }
+            None => {}
         }
 
         // get the latest revision number and increment it
         let file_rev = match LocalStorage::next_rev(Some(latest_rev)) {
-                    Ok(r) => {
-                        r
-                    },
-                    Err(_e) => {
-                        warn!("Couldn't get the next revision for the DaaSDoc!");
-                        return Err(UpsertError)
-                    },
-                };
+            Ok(r) => r,
+            Err(_e) => {
+                warn!("Couldn't get the next revision for the DaaSDoc!");
+                return Err(UpsertError);
+            }
+        };
 
-        // Calculate the file name for the DaaS document  
+        // Calculate the file name for the DaaS document
         let file_uuid = LocalStorage::make_doc_uuid(doc._id.clone(), file_rev.clone());
-        
+
         //create the full directory path if doesn't exists
         let doc_dir_path = self.get_dir_path(file_uuid.clone());
         match LocalStorage::ensure_dir_path(doc_dir_path.clone()) {
             Err(_e) => {
-                error!("Could not create dynamic directory path {} to store DaaS document {}", doc_dir_path.clone(), file_uuid.clone());
-                return Err(UpsertError)
-            },
-            Ok(_)  => {
-                debug!("Created dynamic directory path {} ...", doc_dir_path.clone());
-            },
+                error!(
+                    "Could not create dynamic directory path {} to store DaaS document {}",
+                    doc_dir_path.clone(),
+                    file_uuid.clone()
+                );
+                return Err(UpsertError);
+            }
+            Ok(_) => {
+                debug!(
+                    "Created dynamic directory path {} ...",
+                    doc_dir_path.clone()
+                );
+            }
         }
 
         // update the revision number of the DaaS document
         doc._rev = Some(file_rev.clone());
-        
+
         // Try to create the file
         let json_doc = doc.serialize();
         let mut file = match File::create(self.get_doc_path(file_uuid.clone())) {
             Ok(f) => {
                 debug!("Created file {}", self.get_doc_path(file_uuid.clone()));
                 f
-            },
+            }
             Err(e) => {
-                error!("Could not create DaaS document file {} because of {}.", self.get_doc_path(file_uuid.clone()), e);
-                return Err(UpsertError)
+                error!(
+                    "Could not create DaaS document file {} because of {}.",
+                    self.get_doc_path(file_uuid.clone()),
+                    e
+                );
+                return Err(UpsertError);
             }
         };
 
-        // write the DaaS document content to the file 
+        // write the DaaS document content to the file
         match file.write_all(json_doc.as_bytes()) {
             Ok(_) => {
-                info!("Successfully inserted DaaS document {}", self.get_doc_path(file_uuid.clone()));
-            },
+                info!(
+                    "Successfully inserted DaaS document {}",
+                    self.get_doc_path(file_uuid.clone())
+                );
+            }
             Err(_e) => {
-                error!("Could not write content to the Daas document {}", self.get_doc_path(file_uuid.clone()))
-            },
+                error!(
+                    "Could not write content to the Daas document {}",
+                    self.get_doc_path(file_uuid.clone())
+                )
+            }
         }
 
         // return a Ok Result with the new/updated DaaS document
@@ -130,15 +145,15 @@ impl DaaSDocStorage for LocalStorage {
     }
 
     /// Retrieves a saved Daas document from storage
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * doc_id: String - The _id of the DaaS document to retrieved.</br>
-    /// 
+    ///
     /// #Example
     ///
     /// ```
-    /// #[macro_use] 
+    /// #[macro_use]
     /// extern crate daas;
     ///
     /// use daas::doc::{DaaSDoc};
@@ -148,34 +163,42 @@ impl DaaSDocStorage for LocalStorage {
     /// fn main() {
     ///     let storage = LocalStorage::new("./tests".to_string());
     ///     let daas_doc = storage.get_doc_by_id("order~clothing~iStore~5000".to_string(), None).unwrap();
-    /// 
+    ///
     ///     assert_eq!(daas_doc._rev.unwrap(), "3".to_string());
     /// }
     /// ```
-    fn get_doc_by_id(&self, doc_id: String, doc_rev: Option<String>) -> Result<DaaSDoc, RetrieveError> {
+    fn get_doc_by_id(
+        &self,
+        doc_id: String,
+        doc_rev: Option<String>,
+    ) -> Result<DaaSDoc, RetrieveError> {
         let path = match doc_rev {
             Some(r) => LocalStorage::make_doc_uuid(self.get_doc_path(doc_id), r),
-            None =>    LocalStorage::make_doc_uuid(self.get_doc_path(doc_id.clone()), self.latest_rev(doc_id)),
+            None => LocalStorage::make_doc_uuid(
+                self.get_doc_path(doc_id.clone()),
+                self.latest_rev(doc_id),
+            ),
         };
-        
+
         info!("Retrieving DaaS document {} ...", path.clone());
 
         let serialized: String = match fs::read_to_string(path.clone()) {
-                Ok(c) => {
-                    c
-                },
-                Err(e) => {
-                    error!("Could not read the DaaS document {} from storage. {}", path, e);
-                    return Err(RetrieveError)
-                },
-            };
-        
+            Ok(c) => c,
+            Err(e) => {
+                error!(
+                    "Could not read the DaaS document {} from storage. {}",
+                    path, e
+                );
+                return Err(RetrieveError);
+            }
+        };
+
         match DaaSDoc::from_serialized(&serialized.as_bytes()) {
             Ok(doc) => Ok(doc),
             Err(err) => {
                 error!("{}", err);
-                return Err(RetrieveError)
-            },
+                return Err(RetrieveError);
+            }
         }
     }
 }
@@ -185,11 +208,11 @@ impl LocalStorage {
     //pub const DELIMITER: &'static str = "~";
 
     /// Constructor
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * dir_path: String - The location of the directory where to store the Daas documents.</br>
-    /// 
+    ///
     /// #Example
     ///
     /// ```
@@ -202,17 +225,16 @@ impl LocalStorage {
     /// }
     /// ```
     pub fn new(dir_path: String) -> LocalStorage {
-        match LocalStorage::ensure_dir_path(dir_path.clone()){
+        match LocalStorage::ensure_dir_path(dir_path.clone()) {
             Err(_e) => {
-                warn!("Could not create directory path {} for local storage of the DaaS documents.", dir_path);
+                warn!(
+                    "Could not create directory path {} for local storage of the DaaS documents.",
+                    dir_path
+                );
                 warn!("Using default settings ...");
                 LocalStorage::default()
-            },
-            _ => {
-                LocalStorage {
-                    path: dir_path,
-                }
-            },
+            }
+            _ => LocalStorage { path: dir_path },
         }
     }
 
@@ -224,7 +246,10 @@ impl LocalStorage {
     // Determines if the Daas document file exists
     #[allow(dead_code)]
     fn doc_exists(&self, file_uuid: String) -> bool {
-        println!("Searching for DaaS document {} ...", self.get_doc_path(file_uuid.clone()));
+        println!(
+            "Searching for DaaS document {} ...",
+            self.get_doc_path(file_uuid.clone())
+        );
         let p = self.get_doc_path(file_uuid.clone());
         let doc = Path::new(&p);
         doc.is_file()
@@ -233,16 +258,19 @@ impl LocalStorage {
     // Calculates the full path where the DaaS document will be located
     fn get_doc_path(&self, doc_uuid: String) -> String {
         let dir: Vec<&str> = doc_uuid.split(DELIMITER).collect();
-        format!("{}/{}/{}/{}/{}/{}",&self.path, dir[0], dir[1], dir[2], dir[3], doc_uuid)
+        format!(
+            "{}/{}/{}/{}/{}/{}",
+            &self.path, dir[0], dir[1], dir[2], dir[3], doc_uuid
+        )
     }
 
     // Calculates the base path where the DaaS document will be located
     fn get_dir_path(&self, doc_uuid: String) -> String {
         let dir: Vec<&str> = doc_uuid.split(DELIMITER).collect();
-        format!("{}/{}/{}/{}/{}",&self.path, dir[0], dir[1], dir[2], dir[3])
+        format!("{}/{}/{}/{}/{}", &self.path, dir[0], dir[1], dir[2], dir[3])
     }
-    
-    /// Reads the environment variable `DAAS_LOCAL_STORAGE` and uses it as the local storage path. 
+
+    /// Reads the environment variable `DAAS_LOCAL_STORAGE` and uses it as the local storage path.
     /// If the environment variable doesn't exist, then it uses the temporary directory (in order, the TMP, TEMP, USERPROFILE)
     ///   
     /// #Example
@@ -261,12 +289,8 @@ impl LocalStorage {
     /// ```
     pub fn get_local_path() -> String {
         match env::var("DAAS_LOCAL_STORAGE") {
-            Ok(val) => {
-                val
-            },
-            Err(_e) => {
-                env::temp_dir().to_str().unwrap().to_string()
-            }
+            Ok(val) => val,
+            Err(_e) => env::temp_dir().to_str().unwrap().to_string(),
         }
     }
 
@@ -274,12 +298,12 @@ impl LocalStorage {
         format!("{}{}{}", doc_id, DELIMITER, rev)
     }
 
-    pub fn mark_doc_as_processed(&self, doc: DaaSDoc) -> Result<DaaSDoc, UpsertError>{
+    pub fn mark_doc_as_processed(&self, doc: DaaSDoc) -> Result<DaaSDoc, UpsertError> {
         let mut doc = match self.get_doc_by_id(doc._id, doc._rev) {
             Ok(d) => d,
             Err(e) => {
                 error!("Error: cannot mark DaaS document as processed. {}", e);
-                return Err(UpsertError)
+                return Err(UpsertError);
             }
         };
 
@@ -287,7 +311,7 @@ impl LocalStorage {
 
         // overwrite the file
 
-        // Calculate the file name for the DaaS document  
+        // Calculate the file name for the DaaS document
         let file_uuid = LocalStorage::make_doc_uuid(doc._id.clone(), doc._rev.clone().unwrap());
 
         // Try to create the file
@@ -296,23 +320,33 @@ impl LocalStorage {
             Ok(f) => {
                 debug!("Created file {}", self.get_doc_path(file_uuid.clone()));
                 f
-            },
+            }
             Err(e) => {
-                error!("Could not create DaaS document file {} because of {}.", self.get_doc_path(file_uuid.clone()), e);
-                return Err(UpsertError)
+                error!(
+                    "Could not create DaaS document file {} because of {}.",
+                    self.get_doc_path(file_uuid.clone()),
+                    e
+                );
+                return Err(UpsertError);
             }
         };
 
-        // write the DaaS document content to the file 
+        // write the DaaS document content to the file
         match file.write_all(json_doc.as_bytes()) {
             Ok(_) => {
-                info!("Successfully inserted DaaS document {}", self.get_doc_path(file_uuid.clone()));
+                info!(
+                    "Successfully inserted DaaS document {}",
+                    self.get_doc_path(file_uuid.clone())
+                );
                 Ok(doc)
-            },
+            }
             Err(_e) => {
-                error!("Could not write content to the Daas document {}", self.get_doc_path(file_uuid.clone()));
-                return Err(UpsertError)
-            },
+                error!(
+                    "Could not write content to the Daas document {}",
+                    self.get_doc_path(file_uuid.clone())
+                );
+                return Err(UpsertError);
+            }
         }
     }
 
@@ -320,18 +354,16 @@ impl LocalStorage {
     fn next_rev(revision: Option<String>) -> Result<String, DaaSDocError> {
         match revision {
             None => Ok("0".to_string()),
-            Some(rev) => {
-                match rev.parse::<usize>() {
-                    Ok(r) => {
-                        let new_rev = r + 1;
-                        Ok(new_rev.to_string())
-                    },
-                    Err(_e) => {
-                        error!("Could not increment the revision of the DaaS document!");
-                        Err(DaaSDocError)
-                    }, 
+            Some(rev) => match rev.parse::<usize>() {
+                Ok(r) => {
+                    let new_rev = r + 1;
+                    Ok(new_rev.to_string())
                 }
-            }
+                Err(_e) => {
+                    error!("Could not increment the revision of the DaaS document!");
+                    Err(DaaSDocError)
+                }
+            },
         }
     }
 
@@ -343,44 +375,66 @@ impl LocalStorage {
 
         match base_dir.is_dir() {
             true => {
-                debug!("Searching in {} for latest version for {} ...", dir_path.clone(), doc_id);
-                let mut latest_rev = "0".to_string(); 
-                let mut paths: Vec<_> = fs::read_dir(dir_path).unwrap().filter_map(|r| r.ok()).collect();
+                debug!(
+                    "Searching in {} for latest version for {} ...",
+                    dir_path.clone(),
+                    doc_id
+                );
+                let mut latest_rev = "0".to_string();
+                let mut paths: Vec<_> = fs::read_dir(dir_path)
+                    .unwrap()
+                    .filter_map(|r| r.ok())
+                    .collect();
 
                 paths.sort_by_key(|dir| dir.path());
-                latest_rev = format!("{}", paths.pop().unwrap().file_name().into_string().unwrap().split(DELIMITER).collect::<Vec<&str>>().last().unwrap());
-                
+                latest_rev = format!(
+                    "{}",
+                    paths
+                        .pop()
+                        .unwrap()
+                        .file_name()
+                        .into_string()
+                        .unwrap()
+                        .split(DELIMITER)
+                        .collect::<Vec<&str>>()
+                        .last()
+                        .unwrap()
+                );
+
                 latest_rev
-            },
+            }
             false => {
                 // set to zero for not existing document
                 "0".to_string()
-            },
+            }
         }
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pbd::dua::DUA;
     use pbd::dtc::Tracker;
+    use pbd::dua::DUA;
 
-    fn get_dua() -> Vec<DUA>{
+    fn get_dua() -> Vec<DUA> {
         let mut v = Vec::new();
-        v.push( DUA {
-                    agreement_name: "billing".to_string(),
-                    location: "www.dua.org/billing.pdf".to_string(),
-                    agreed_dtm: 1553988607,
-                });
+        v.push(DUA {
+            agreement_name: "billing".to_string(),
+            location: "www.dua.org/billing.pdf".to_string(),
+            agreed_dtm: 1553988607,
+        });
         v
     }
 
     fn get_dtc(src_name: String, src_uid: usize, cat: String, subcat: String) -> Tracker {
-        Tracker::new(DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), src_uid))
+        Tracker::new(DaaSDoc::make_id(
+            cat.clone(),
+            subcat.clone(),
+            src_name.clone(),
+            src_uid,
+        ))
     }
-   
 
     fn get_daas_doc() -> DaaSDoc {
         let src = "iStore".to_string();
@@ -389,9 +443,18 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
+        let dtc = get_dtc(src.clone(), uid.clone(), cat.clone(), sub.clone());
         let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data);
+        let doc = DaaSDoc::new(
+            src.clone(),
+            uid,
+            cat.clone(),
+            sub.clone(),
+            auth.clone(),
+            dua,
+            dtc,
+            data,
+        );
 
         doc
     }
@@ -410,19 +473,18 @@ mod tests {
         assert_eq!(env::temp_dir().to_str().unwrap().to_string(), storage);
     }
 
-
     #[test]
     fn test_make_doc_uuid() {
         let doc_id = "order~clothing~iStore~5000".to_string();
         let rev = "0".to_string();
-        let expected = format!("{}~{}",doc_id.clone(),rev.clone());
-        
-        assert_eq!(LocalStorage::make_doc_uuid(doc_id,rev), expected); 
+        let expected = format!("{}~{}", doc_id.clone(), rev.clone());
+
+        assert_eq!(LocalStorage::make_doc_uuid(doc_id, rev), expected);
     }
 
     #[test]
     fn test_doc_exists() {
-        let loc = LocalStorage::new("./tests".to_string()); 
+        let loc = LocalStorage::new("./tests".to_string());
         assert!(loc.doc_exists("test~doc~exists~0001~0.test".to_string()));
         assert!(!loc.doc_exists("test~doc~exists~0001~0.tests".to_string()));
     }
@@ -430,32 +492,33 @@ mod tests {
     #[test]
     fn test_default() {
         let _ = env_logger::builder().is_test(true).try_init();
-        let loc = LocalStorage::default(); 
+        let loc = LocalStorage::default();
         assert_eq!(loc.path, ".".to_string());
     }
 
     #[test]
-    fn test_get_doc_by_id_latest(){
+    fn test_get_doc_by_id_latest() {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tests".to_string());
-        
+
         match loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), None) {
-            Ok(doc) => {
-                match doc._rev {
-                    Some(r) => assert_eq!(r, "3".to_string()),
-                    None => assert!(false),
-                }
+            Ok(doc) => match doc._rev {
+                Some(r) => assert_eq!(r, "3".to_string()),
+                None => assert!(false),
             },
             Err(err) => panic!("Could not find the latest document. Error:{}", err),
         }
     }
 
     #[test]
-    fn test_get_doc_by_id_rev_found(){
+    fn test_get_doc_by_id_rev_found() {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tests".to_string());
-        
-        let rslt = match loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), Some("2".to_string())) {
+
+        let rslt = match loc.get_doc_by_id(
+            "order~clothing~iStore~5000".to_string(),
+            Some("2".to_string()),
+        ) {
             Err(_e) => false,
             _ => true,
         };
@@ -464,11 +527,14 @@ mod tests {
     }
 
     #[test]
-    fn test_get_doc_by_id_rev_not_found(){
+    fn test_get_doc_by_id_rev_not_found() {
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tests".to_string());
-        
-        let rslt = match loc.get_doc_by_id("order~clothing~iStore~5000".to_string(), Some("15".to_string())) {
+
+        let rslt = match loc.get_doc_by_id(
+            "order~clothing~iStore~5000".to_string(),
+            Some("15".to_string()),
+        ) {
             Err(_e) => true,
             _ => false,
         };
@@ -479,13 +545,19 @@ mod tests {
     #[test]
     fn test_get_doc_path() {
         let loc = LocalStorage::new("./tmp".to_string());
-        assert_eq!(loc.get_doc_path("order~clothing~iStore~5000~0".to_string()), "./tmp/order/clothing/iStore/5000/order~clothing~iStore~5000~0".to_string())
+        assert_eq!(
+            loc.get_doc_path("order~clothing~iStore~5000~0".to_string()),
+            "./tmp/order/clothing/iStore/5000/order~clothing~iStore~5000~0".to_string()
+        )
     }
 
     #[test]
     fn test_get_dir_path() {
         let loc = LocalStorage::new("./tmp".to_string());
-        assert_eq!(loc.get_dir_path("order~clothing~iStore~5000~0".to_string()), "./tmp/order/clothing/iStore/5000".to_string())
+        assert_eq!(
+            loc.get_dir_path("order~clothing~iStore~5000~0".to_string()),
+            "./tmp/order/clothing/iStore/5000".to_string()
+        )
     }
 
     #[test]
@@ -501,7 +573,10 @@ mod tests {
 
     #[test]
     fn test_next_rev() {
-        assert_eq!(LocalStorage::next_rev(Some("1".to_string())).unwrap(), "2".to_string());
+        assert_eq!(
+            LocalStorage::next_rev(Some("1".to_string())).unwrap(),
+            "2".to_string()
+        );
     }
 
     #[test]
@@ -512,7 +587,11 @@ mod tests {
         let file_name = LocalStorage::make_doc_uuid(doc._id.clone(), 0.to_string());
 
         assert!(loc.upsert_daas_doc(doc).is_ok());
-        assert!(Path::new(&format!("{}/order/clothing/iStore/6000/{}", loc.path, file_name)).is_file());
+        assert!(Path::new(&format!(
+            "{}/order/clothing/iStore/6000/{}",
+            loc.path, file_name
+        ))
+        .is_file());
     }
 
     #[test]
@@ -524,13 +603,13 @@ mod tests {
         let sub = "music".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
+        let dtc = get_dtc(src.clone(), uid.clone(), cat.clone(), sub.clone());
 
         let mut file1 = match File::open("./tests/example_audio_clip.mp3") {
             Ok(aud) => aud,
             Err(err) => {
-                panic!("Cannot read the audio file: {}",err);
-            },
+                panic!("Cannot read the audio file: {}", err);
+            }
         };
 
         let mut data = Vec::new();
@@ -539,27 +618,58 @@ mod tests {
         // store the DaaSDoc
         let _ = env_logger::builder().is_test(true).try_init();
         let loc = LocalStorage::new("./tests".to_string());
-        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data); 
+        let doc = DaaSDoc::new(
+            src.clone(),
+            uid,
+            cat.clone(),
+            sub.clone(),
+            auth.clone(),
+            dua,
+            dtc,
+            data,
+        );
         let file_name = LocalStorage::make_doc_uuid(doc._id.clone(), 0.to_string());
 
         assert!(loc.upsert_daas_doc(doc).is_ok());
-        assert!(Path::new(&format!("{}/order/music/iStore/16500/{}", loc.path, file_name)).is_file());        
-        
+        assert!(Path::new(&format!(
+            "{}/order/music/iStore/16500/{}",
+            loc.path, file_name
+        ))
+        .is_file());
+
         // reteive the DaaSDoc from storage
-        let mut f = File::open(format!("{}/order/music/iStore/16500/{}", loc.path, file_name)).unwrap();
+        let mut f = File::open(format!(
+            "{}/order/music/iStore/16500/{}",
+            loc.path, file_name
+        ))
+        .unwrap();
         let mut content = Vec::new();
         f.read_to_end(&mut content).unwrap();
         let doc = DaaSDoc::from_serialized(&content).unwrap();
 
         // create an audio file from the DaaSDoc data object
-        let mut file2 = File::create(Path::new(&format!("{}/order/music/iStore/16500/example_audio_clip.mp3", loc.path))).unwrap();
+        let mut file2 = File::create(Path::new(&format!(
+            "{}/order/music/iStore/16500/example_audio_clip.mp3",
+            loc.path
+        )))
+        .unwrap();
         match file2.write_all(&doc.data_obj) {
             Ok(_aud) => assert!(true),
             Err(_e) => assert!(false),
         }
 
         // make sure both files are the same
-        assert_eq!(fs::metadata("./tests/example_audio_clip.mp3").unwrap().len(), fs::metadata(format!("{}/order/music/iStore/16500/example_audio_clip.mp3", loc.path)).unwrap().len());
+        assert_eq!(
+            fs::metadata("./tests/example_audio_clip.mp3")
+                .unwrap()
+                .len(),
+            fs::metadata(format!(
+                "{}/order/music/iStore/16500/example_audio_clip.mp3",
+                loc.path
+            ))
+            .unwrap()
+            .len()
+        );
     }
 
     #[test]
