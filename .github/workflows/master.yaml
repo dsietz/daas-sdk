@@ -87,10 +87,18 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-  coveralls-grcov:
+coveralls-grcov:
     name: Code Coverage
     runs-on: ubuntu-latest
     steps:
+      - name: Start Kafka
+        uses: 280780363/kafka-action@v1.0
+        with:
+          kafka version: "latest" # Optional, kafka version
+          zookeeper version: "latest" # Optional, zookeeper version
+          kafka port: 9092 # Optional, kafka port
+          zookeeper port: 2181 # Optional, zookeeper port
+          auto create topic: "true" # Optional, auto create kafka topic
       - uses: actions/checkout@v2
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
@@ -101,15 +109,15 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clean    
-      # - name: Gather coverage data  # Error due to https://github.com/xd009642/tarpaulin/issues/461
-      #   uses: actions-rs/tarpaulin@v0.1
-      #   with:
-      #     version: '0.15.0'
-      #     out-type: 'Lcov'
-      #     run-types: Tests
-      #     args: '-- --test-threads 1'  
-      - name: Gather coverage data
-        uses: docker://lpenz/ghaction-rust-coverage:0.2
+      - name: Gather coverage data  # Error due to https://github.com/xd009642/tarpaulin/issues/461
+        uses: actions-rs/tarpaulin@v0.1
+        with:
+          version: '0.15.0'
+          out-type: 'Lcov'
+          run-types: Tests
+          args: '-- --test-threads 1'  
+      # - name: Gather coverage data
+      #   uses: docker://lpenz/ghaction-rust-coverage:0.2
       - name: Coveralls upload
         uses: coverallsapp/github-action@master
         with:
@@ -127,4 +135,4 @@ jobs:
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true        
+          parallel-finished: true    
