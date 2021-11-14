@@ -6,7 +6,7 @@
 //! Create DaaS object that represents a new purchase of clothing from an online store.
 //!
 //! ```
-//! #[macro_use] 
+//! #[macro_use]
 //! extern crate serde_json;
 //! extern crate pbd;
 //! extern crate daas;
@@ -34,19 +34,19 @@
 //!         "quantity": 1,
 //!		    "status": "new"
 //!		}"#).as_bytes().to_vec();
-//! 
+//!
 //!		let doc = DaaSDoc::new(src, uid, cat, sub, auth, dua,tracker, data);
-//! 
+//!
 //!     assert_eq!(doc.source_uid, uid);
 //! }
 //! ```
 
-use crate::*;
 use crate::errors::*;
-use std::collections::BTreeMap;
-use pbd::dua::DUA;
+use crate::*;
 use pbd::dtc::Tracker;
+use pbd::dua::DUA;
 use serde_json::Value;
+use std::collections::BTreeMap;
 
 // Repesentation of a map for storing metadata about the data object
 type Metadata = BTreeMap<String, String>;
@@ -86,7 +86,7 @@ pub struct DaaSDoc {
 
 /// Represents an new DaaS document (before it has been saved and assigned a _rev value)
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct DaaSDocNoRev{
+struct DaaSDocNoRev {
     /// The unique identifier
     pub _id: String,
     /// The name of the data source
@@ -116,20 +116,20 @@ impl DaaSDoc {
     //pub const DELIMITER: &'static str = "~";
 
     /// Constructor
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * src_name: String - The name of the data source.</br>
     /// * src_uid: usize - The unique identifier that the data source provided.</br>
     /// * cat: String - The name of the category (e.g.: order).</br>
     /// * sub: String - The name of the subcategory (e.g.: clothing).</br>
     /// * auth: String - The name of the auithor who created the document.</br>
     /// * data: Value - The json value that represents the data from the data source managed by the DaaS document.</br>
-    /// 
+    ///
     /// #Example
     ///
     /// ```
-    /// #[macro_use] 
+    /// #[macro_use]
     /// extern crate serde_json;
     /// extern crate pbd;
     /// extern crate daas;
@@ -156,7 +156,16 @@ impl DaaSDoc {
     ///     println!("{:?}", doc._id);
     /// }
     /// ```
-    pub fn new(src_name: String, src_uid: usize, cat: String, subcat: String, auth: String, duas: Vec<DUA>, dtc: Tracker, data: Vec<u8>) -> DaaSDoc {
+    pub fn new(
+        src_name: String,
+        src_uid: usize,
+        cat: String,
+        subcat: String,
+        auth: String,
+        duas: Vec<DUA>,
+        dtc: Tracker,
+        data: Vec<u8>,
+    ) -> DaaSDoc {
         let this_id = DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), src_uid);
 
         DaaSDoc {
@@ -178,16 +187,16 @@ impl DaaSDoc {
     }
 
     /// Adds an entry to the metadata
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * key: String - The key used to identify the name of the metadata property.</br>
     /// * value: String - The value used to define the metadata property.</br>
     ///    
     /// #Example
     ///
     /// ```
-    /// #[macro_use] 
+    /// #[macro_use]
     /// extern crate serde_json;
     /// extern crate pbd;
     /// extern crate daas;
@@ -215,19 +224,19 @@ impl DaaSDoc {
     /// }
     /// ```
     pub fn add_meta(&mut self, key: String, value: String) {
-        &self.meta_data.insert(key, value);
+        let _ = &self.meta_data.insert(key, value);
     }
 
     /// Adds a tag
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * tag: String - The textual label to use as a tag.</br>
     ///    
     /// #Example
     ///
     /// ```
-    /// #[macro_use] 
+    /// #[macro_use]
     /// extern crate serde_json;
     /// extern crate pbd;
     /// extern crate daas;
@@ -256,15 +265,15 @@ impl DaaSDoc {
     /// }
     /// ```
     pub fn add_tag(&mut self, tag: String) {
-        &self.tags.push(tag);
+        let _ = &self.tags.push(tag);
     }
 
     /// Returns the data source json value as a reference
-    /// 
+    ///
     /// #Example
     ///
     /// ```
-    /// #[macro_use] 
+    /// #[macro_use]
     /// extern crate serde_json;
     /// extern crate pbd;
     /// extern crate daas;
@@ -293,14 +302,14 @@ impl DaaSDoc {
     /// ```
     pub fn data_obj_as_ref(&mut self) -> &mut Vec<u8> {
         &mut self.data_obj
-    }    
+    }
 
     /// Constructs a DaaSDoc object from a serialized string
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * serialized: &str - The string that represents the serialized object.</br>
-    /// 
+    ///
     /// #Example
     ///
     /// ```
@@ -311,31 +320,31 @@ impl DaaSDoc {
     /// fn main() {
     ///     let serialized = r#"{"_id":"order|clothing|iStore|5000","_rev":null,"source_name":"iStore","source_uid":5000,"category":"order","subcategory":"clothing","author":"istore_app","process_ind":false,"last_updated":1553988607,"data_usage_agreements":[{"agreement_name":"billing","location":"www.dua.org/billing.pdf","agreed_dtm":1553988607}],"data_tracker":{"chain":[{"identifier":{"data_id":"order~clothing~iStore~5000","index":0,"timestamp":0,"actor_id":"","previous_hash":"0"},"hash":"72259503327276020952102368672148358485","nonce":5}]},"meta_data":{},"tags":[],"data_obj":[123,34,115,116,97,116,117,115,34,58,32,34,110,101,119,34,125]}"#;
     ///     let doc = DaaSDoc::from_serialized(&serialized.as_bytes()).unwrap();
-  	///     
+    ///     
     ///     assert_eq!(doc.source_uid, 5000);
     /// }
     /// ```
     pub fn from_serialized(serialized: &[u8]) -> Result<DaaSDoc, DaaSDocError> {
-		match serde_json::from_slice(&serialized) {
+        match serde_json::from_slice(&serialized) {
             Ok(doc) => Ok(doc),
             Err(err) => {
                 error!("{}", err);
                 Err(DaaSDocError)
-            },
+            }
         }
     }
 
     /// Returns the value of a metadata entry
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * key: String - The key used to identify the name of the metadata property.</br>
     /// * value: String - The value used to define the metadata property.</br>
     ///    
     /// #Example
     ///
     /// ```
-    /// #[macro_use] 
+    /// #[macro_use]
     /// extern crate serde_json;
     /// extern crate pbd;
     /// extern crate daas;
@@ -363,7 +372,7 @@ impl DaaSDoc {
     ///     println!("foo {}", doc.get_meta("foowho".to_string()) );
     /// }
     /// ```
-    pub fn get_meta(&mut self, key: String) -> String{
+    pub fn get_meta(&mut self, key: String) -> String {
         self.meta_data.get(&key).unwrap().to_string()
     }
 
@@ -372,7 +381,7 @@ impl DaaSDoc {
     /// #Example
     ///
     /// ```
-    /// #[macro_use] 
+    /// #[macro_use]
     /// extern crate serde_json;
     /// extern crate pbd;
     /// extern crate daas;
@@ -409,7 +418,7 @@ impl DaaSDoc {
     /// #Example
     ///
     /// ```
-    /// #[macro_use] 
+    /// #[macro_use]
     /// extern crate serde_json;
     /// extern crate pbd;
     /// extern crate daas;
@@ -451,15 +460,19 @@ impl DaaSDoc {
     /// * src_uid: usize - The unique identifier that the data source provided.</br>
     ///
     pub fn make_id(cat: String, subcat: String, src_name: String, src_uid: usize) -> String {
-        format!("{}{}{}{}{}{}{}",cat, DELIMITER, subcat, DELIMITER, src_name, DELIMITER, src_uid).to_string()
-    } 
+        format!(
+            "{}{}{}{}{}{}{}",
+            cat, DELIMITER, subcat, DELIMITER, src_name, DELIMITER, src_uid
+        )
+        .to_string()
+    }
 
     /// Serializes the DaaSDoc object
-    /// 
+    ///
     /// #Example
     ///
     /// ```
-    /// #[macro_use] 
+    /// #[macro_use]
     /// extern crate serde_json;
     /// extern crate pbd;
     /// extern crate daas;
@@ -487,22 +500,22 @@ impl DaaSDoc {
     /// }
     /// ```
     pub fn serialize(&mut self) -> String {
-		serde_json::to_string(&self).unwrap()
+        serde_json::to_string(&self).unwrap()
     }
 
     /// Serializes the DaaSDoc object without the _rev attribute
-    /// 
+    ///
     /// #Example
     ///
     /// ```
-    /// #[macro_use] 
+    /// #[macro_use]
     /// extern crate serde_json;
     /// extern crate pbd;
     /// extern crate daas;
     ///
     /// use serde_json::value::*;
     /// use pbd::dua::DUA;
-    /// use pbd::dtc::Tracker; 
+    /// use pbd::dtc::Tracker;
     /// use daas::doc::{DaaSDoc};
     ///
     /// fn main() {
@@ -546,18 +559,18 @@ impl DaaSDoc {
     ///
     /// + Must have at least one Dat Usage Agreement
     /// + Must have a Data Tracker Chain that has not been tampered with or replaced with a fake one
-    /// 
+    ///
     /// #Example
     ///
     /// ```
-    /// #[macro_use] 
+    /// #[macro_use]
     /// extern crate serde_json;
     /// extern crate pbd;
     /// extern crate daas;
     ///
     /// use serde_json::value::*;
     /// use pbd::dua::DUA;
-    /// use pbd::dtc::Tracker; 
+    /// use pbd::dtc::Tracker;
     /// use daas::doc::{DaaSDoc};
     ///
     /// fn main() {
@@ -581,26 +594,20 @@ impl DaaSDoc {
     /// ```
     pub fn validate(self) -> Result<Self, DaaSSecurityError> {
         let mut chck: bool = false;
-        
+
         chck = match self.validate_has_usage_agreement() {
             Ok(_) => true,
-            Err(err) => {
-                return Err(err)
-            },
+            Err(err) => return Err(err),
         };
 
         chck = match self.validate_matching_tracker() {
             Ok(_) => true,
-            Err(err) => {
-                return Err(err)
-            },
+            Err(err) => return Err(err),
         };
 
         chck = match self.validate_untampered_tracker() {
             Ok(_) => true,
-            Err(err) => {
-                return Err(err)
-            },
+            Err(err) => return Err(err),
         };
 
         match chck {
@@ -609,41 +616,48 @@ impl DaaSDoc {
         }
     }
 
-    fn validate_matching_tracker(&self) -> Result<(),DaaSSecurityError> {
+    fn validate_matching_tracker(&self) -> Result<(), DaaSSecurityError> {
         match self.data_tracker.get(0).unwrap().identifier.data_id == self._id {
             true => Ok(()),
             false => {
-                warn!("DaaS detected a mismatched tracker in docoument {} and has rejected it.", self._id);
+                warn!(
+                    "DaaS detected a mismatched tracker in docoument {} and has rejected it.",
+                    self._id
+                );
                 Err(DaaSSecurityError::TamperedDataError)
-            },
+            }
         }
     }
 
-    fn validate_untampered_tracker(&self) -> Result<(),DaaSSecurityError> {
+    fn validate_untampered_tracker(&self) -> Result<(), DaaSSecurityError> {
         match self.data_tracker.is_valid() {
             true => Ok(()),
             false => {
-                warn!("DaaS detected a tampered docoument {} and has rejected it.", self._id);
+                warn!(
+                    "DaaS detected a tampered docoument {} and has rejected it.",
+                    self._id
+                );
                 Err(DaaSSecurityError::TamperedDataError)
-            },            
+            }
         }
     }
 
-    fn validate_has_usage_agreement(&self) -> Result<(),DaaSSecurityError> {
+    fn validate_has_usage_agreement(&self) -> Result<(), DaaSSecurityError> {
         match self.data_usage_agreements.is_empty() {
-            false => {
-                match self.data_usage_agreements[0].agreed_dtm < get_unix_now!() {
-                    true => Ok(()),
-                    false => {
-                        warn!("DaaS detected an invalid usage agreement for docoument {} and has rejected it.", self._id);
-                        Err(DaaSSecurityError::BadAgreementError)
-                    },
+            false => match self.data_usage_agreements[0].agreed_dtm < get_unix_now!() {
+                true => Ok(()),
+                false => {
+                    warn!("DaaS detected an invalid usage agreement for docoument {} and has rejected it.", self._id);
+                    Err(DaaSSecurityError::BadAgreementError)
                 }
             },
             true => {
-                warn!("DaaS detected a missing usage agreement for docoument {} and has rejected it.", self._id);
+                warn!(
+                    "DaaS detected a missing usage agreement for docoument {} and has rejected it.",
+                    self._id
+                );
                 Err(DaaSSecurityError::MissingAgreementError)
-            },            
+            }
         }
     }
 }
@@ -651,8 +665,8 @@ impl DaaSDoc {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::prelude::*;
     use std::fs::File;
+    use std::io::prelude::*;
 
     fn get_default_daasdoc() -> DaaSDoc {
         let src = "iStore".to_string();
@@ -661,41 +675,55 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
+        let dtc = get_dtc(src.clone(), uid.clone(), cat.clone(), sub.clone());
         let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data);
+        let doc = DaaSDoc::new(
+            src.clone(),
+            uid,
+            cat.clone(),
+            sub.clone(),
+            auth.clone(),
+            dua,
+            dtc,
+            data,
+        );
 
         doc
     }
 
-    fn get_dua() -> Vec<DUA>{
+    fn get_dua() -> Vec<DUA> {
         let mut v = Vec::new();
-        v.push( DUA {
-                    agreement_name: "billing".to_string(),
-                    location: "www.dua.org/billing.pdf".to_string(),
-                    agreed_dtm: 1553988607,
-                });
+        v.push(DUA {
+            agreement_name: "billing".to_string(),
+            location: "www.dua.org/billing.pdf".to_string(),
+            agreed_dtm: 1553988607,
+        });
         v
     }
 
     fn get_dtc(src_name: String, src_uid: usize, cat: String, subcat: String) -> Tracker {
-        Tracker::new(DaaSDoc::make_id(cat.clone(), subcat.clone(), src_name.clone(), src_uid))
+        Tracker::new(DaaSDoc::make_id(
+            cat.clone(),
+            subcat.clone(),
+            src_name.clone(),
+            src_uid,
+        ))
     }
-   
+
     #[test]
     fn test_has_tag_ok() {
         let mut doc = get_default_daasdoc();
         doc.add_tag("foo".to_string());
         doc.add_tag("bar".to_string());
-        
+
         assert_eq!(doc.has_tag("foo".to_string()), true);
         assert_eq!(doc.has_tag("me".to_string()), false);
-    }  
-    
+    }
+
     #[test]
     fn test_new_obj_ok() {
         let _doc = get_default_daasdoc();
-        
+
         assert!(true);
     }
 
@@ -706,19 +734,19 @@ mod tests {
         let cat = "order".to_string();
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
-        let id = format!("{}~{}~{}~{}",cat, sub, src, uid).to_string();
+        let id = format!("{}~{}~{}~{}", cat, sub, src, uid).to_string();
         let dua = get_dua();
-        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
+        let dtc = get_dtc(src.clone(), uid.clone(), cat.clone(), sub.clone());
         let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
         let doc = DaaSDoc::new(src, uid, cat, sub, auth, dua, dtc, data);
-        
+
         assert_eq!(doc._id, id);
     }
 
     #[test]
     fn test_doc_rev_empty() {
         let doc = get_default_daasdoc();
-        
+
         assert!(doc._rev.is_none());
     }
 
@@ -730,14 +758,14 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let doc = get_default_daasdoc();
-        
+
         assert_eq!(doc.author, auth);
         assert_eq!(doc.source_name, src);
         assert_eq!(doc.source_uid, uid);
         assert_eq!(doc.category, cat);
         assert_eq!(doc.subcategory, sub);
         assert_eq!(doc.process_ind, false);
-    } 
+    }
 
     #[test]
     fn test_doc_binary_data_ok() {
@@ -747,39 +775,48 @@ mod tests {
         let sub = "music".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let dtc = get_dtc(src.clone(),uid.clone(),cat.clone(),sub.clone());
-        
+        let dtc = get_dtc(src.clone(), uid.clone(), cat.clone(), sub.clone());
+
         let mut f = match File::open("./tests/example_audio_clip.mp3") {
             Ok(aud) => aud,
             Err(err) => {
-                panic!("Cannot read the audio file: {}",err);
-            },
+                panic!("Cannot read the audio file: {}", err);
+            }
         };
 
         let mut data = Vec::new();
         f.read_to_end(&mut data).unwrap();
 
-        let mut doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, dtc, data); 
-        
-        assert_eq!(doc.data_obj_as_ref().len(),764176);
-    } 
-    
+        let mut doc = DaaSDoc::new(
+            src.clone(),
+            uid,
+            cat.clone(),
+            sub.clone(),
+            auth.clone(),
+            dua,
+            dtc,
+            data,
+        );
+
+        assert_eq!(doc.data_obj_as_ref().len(), 764176);
+    }
+
     #[test]
     fn test_doc_data_ok() {
         let doc = get_default_daasdoc();
         let dat: Value = serde_json::from_str(&String::from_utf8(doc.data_obj).unwrap()).unwrap();
-        
+
         assert_eq!(dat.get("status").unwrap(), "new");
-    } 
+    }
 
     #[test]
-    fn test_from_serialize(){
+    fn test_from_serialize() {
         let src = "iStore".to_string();
         let uid = 5000;
         let cat = "order".to_string();
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
-        let id = format!("{}~{}~{}~{}",cat, sub, src, uid).to_string();
+        let id = format!("{}~{}~{}~{}", cat, sub, src, uid).to_string();
         let serialized = r#"{
             "_id":"order~clothing~iStore~5000",
             "_rev":null,"source_name":"iStore",
@@ -796,7 +833,7 @@ mod tests {
         let dua = get_dua();
         let doc = DaaSDoc::from_serialized(&serialized.as_bytes()).unwrap();
         let dat: Value = serde_json::from_str(&String::from_utf8(doc.data_obj).unwrap()).unwrap();
-  	
+
         assert_eq!(doc._id, id);
         assert!(doc._rev.is_none());
         assert_eq!(doc.source_name, src);
@@ -805,22 +842,25 @@ mod tests {
         assert_eq!(doc.subcategory, sub);
         assert_eq!(doc.author, auth);
         assert_eq!(doc.process_ind, false);
-        assert_eq!(doc.data_usage_agreements[0].agreement_name, dua[0].agreement_name);
-		assert_eq!(dat.get("status").unwrap(), "new");
-    }    
+        assert_eq!(
+            doc.data_usage_agreements[0].agreement_name,
+            dua[0].agreement_name
+        );
+        assert_eq!(dat.get("status").unwrap(), "new");
+    }
 
     #[test]
     fn test_meta_data_ok() {
         let mut doc = get_default_daasdoc();
-        doc.add_meta("foo".to_string(),"bar".to_string());
-        
+        doc.add_meta("foo".to_string(), "bar".to_string());
+
         assert_eq!(doc.get_meta("foo".to_string()), "bar");
-    }   
+    }
 
     #[test]
     fn test_validate_doc_ok() {
         let doc = get_default_daasdoc();
-        
+
         assert!(doc.validate().is_ok());
     }
 
@@ -832,10 +872,21 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let tracker = Tracker::from_serialized(r#"[{"identifier":{"data_id":"order~clothing~iStore~6000","index":0,"timestamp":0,"actor_id":"","previous_hash":"0"},"hash":"72259503327276020952102368672148358485","nonce":5}]"#);
+        let tracker = Tracker::from_serialized(
+            r#"[{"identifier":{"data_id":"order~clothing~iStore~6000","index":0,"timestamp":0,"actor_id":"","previous_hash":"0"},"hash":"72259503327276020952102368672148358485","nonce":5}]"#,
+        );
         let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker.unwrap(), data);
-        
+        let doc = DaaSDoc::new(
+            src.clone(),
+            uid,
+            cat.clone(),
+            sub.clone(),
+            auth.clone(),
+            dua,
+            tracker.unwrap(),
+            data,
+        );
+
         assert!(doc.validate().is_err());
     }
 
@@ -847,19 +898,30 @@ mod tests {
         let sub = "clothing".to_string();
         let auth = "istore_app".to_string();
         let dua = get_dua();
-        let tracker = Tracker::from_serialized(r#"[{"identifier":{"data_id":"order~clothing~iStore~5000","index":0,"timestamp":0,"actor_id":"","previous_hash":"0"},"hash":"7225950332727602095210236867214835840","nonce":5}]"#);
+        let tracker = Tracker::from_serialized(
+            r#"[{"identifier":{"data_id":"order~clothing~iStore~5000","index":0,"timestamp":0,"actor_id":"","previous_hash":"0"},"hash":"7225950332727602095210236867214835840","nonce":5}]"#,
+        );
         let data = String::from(r#"{"status": "new"}"#).as_bytes().to_vec();
-        let doc = DaaSDoc::new(src.clone(), uid, cat.clone(), sub.clone(), auth.clone(), dua, tracker.unwrap(), data);
-        
+        let doc = DaaSDoc::new(
+            src.clone(),
+            uid,
+            cat.clone(),
+            sub.clone(),
+            auth.clone(),
+            dua,
+            tracker.unwrap(),
+            data,
+        );
+
         assert!(doc.validate().is_err());
     }
-    
+
     #[test]
     fn test_tagging_ok() {
         let mut doc = get_default_daasdoc();
         doc.add_tag("foo".to_string());
         doc.add_tag("bar".to_string());
-        
+
         assert_eq!(doc.get_tags().len(), 2);
-    }  
+    }
 }

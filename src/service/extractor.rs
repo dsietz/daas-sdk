@@ -1,21 +1,25 @@
 use super::*;
-use std::fmt;
 use actix_web::{FromRequest, HttpRequest};
 use base64::decode;
+use std::fmt;
 
-// 
+//
 // The common trait for all Author Extractors
-// 
+//
 pub type LocalError = MissingAuthorError;
 
 pub trait AuthorExtractor {
-    fn extract_author(&mut self, req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<String, MissingAuthorError>;
+    fn extract_author(
+        &mut self,
+        req: &HttpRequest,
+        _payload: &mut actix_web::dev::Payload,
+    ) -> Result<String, MissingAuthorError>;
     fn get_name(&self) -> String;
     fn new() -> Self;
-    fn set_name(&mut self, name: String) -> Result<Self, MissingAuthorError> 
-        where Self: std::marker::Sized;
+    fn set_name(&mut self, name: String) -> Result<Self, MissingAuthorError>
+    where
+        Self: std::marker::Sized;
 }
-
 
 //
 // The Base64Author Extractor
@@ -31,41 +35,35 @@ impl fmt::Display for Base64Author {
 }
 
 impl AuthorExtractor for Base64Author {
-    fn extract_author(&mut self, req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Result<String, MissingAuthorError> {
+    fn extract_author(
+        &mut self,
+        req: &HttpRequest,
+        _payload: &mut actix_web::dev::Payload,
+    ) -> Result<String, MissingAuthorError> {
         match req.headers().get("Authorization") {
-            Some(hdr) => {
-                match hdr.to_str() {
-                    Ok(encoded) => {
-                        match decode(&encoded.replace("Basic ","")) {
-                            Ok(decoded) => {
-                                match String::from_utf8(decoded) {
-                                    Ok(base) => {
-                                        Ok(base.split(':').collect::<Vec<&str>>()[0].to_string())
-                                    },
-                                    Err(err) => {
-                                        debug!("{}", err);
-                                        Err(MissingAuthorError)
-                                    },
-                                }
-                            },
-                            Err(err) => {
-                                debug!("{}", err);
-                                Err(MissingAuthorError)
-                            },
+            Some(hdr) => match hdr.to_str() {
+                Ok(encoded) => match decode(&encoded.replace("Basic ", "")) {
+                    Ok(decoded) => match String::from_utf8(decoded) {
+                        Ok(base) => Ok(base.split(':').collect::<Vec<&str>>()[0].to_string()),
+                        Err(err) => {
+                            debug!("{}", err);
+                            Err(MissingAuthorError)
                         }
                     },
                     Err(err) => {
                         debug!("{}", err);
                         Err(MissingAuthorError)
-                    },
+                    }
+                },
+                Err(err) => {
+                    debug!("{}", err);
+                    Err(MissingAuthorError)
                 }
             },
-            None => {
-                Err(MissingAuthorError)
-            },
+            None => Err(MissingAuthorError),
         }
     }
-    
+
     // Use macros to write the default functions
     author_fn_get_name!();
     author_fn_new!();
