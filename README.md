@@ -1,5 +1,6 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Coverage Status](https://coveralls.io/repos/github/dsietz/daas-sdk/badge.svg?branch=master)](https://coveralls.io/github/dsietz/daas-sdk?branch=master)
+[![Discussions](https://img.shields.io/github/discussions/dsietz/daas-sdk)](https://github.com/dsietz/daas-sdk/discussions)
 [![Docs.rs](https://docs.rs/daas/badge.svg)](https://docs.rs/daas)
 
 Linux: [![Build Status](https://github.com/dsietz/daas-sdk/actions/workflows/master.yaml/badge.svg)](https://github.com/dsietz/daas-sdk/actions/workflows/master.yaml)
