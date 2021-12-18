@@ -117,7 +117,7 @@ jobs:
       #     run-types: Tests
       #     args: '-- --test-threads 1'  
       - name: Gather coverage data
-        uses: docker://lpenz/ghaction-rust-coverage:0.4.1
+        uses: docker://lpenz/ghaction-rust-coverage:0.4
       - name: Coveralls upload
         uses: coverallsapp/github-action@master
         with:
