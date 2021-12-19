@@ -2,12 +2,12 @@ environment:
   matrix:
   - TARGET: x86_64-pc-windows-msvc
     BITS: 64
-    OPENSSL_VERSION: 1_1_1L
+    OPENSSL_VERSION: 1_1_1m
     OPENSSL_DIR: C:\OpenSSL
     CHANNEL: stable
   - TARGET: i686-pc-windows-msvc
     BITS: 32
-    OPENSSL_VERSION: 1_1_1L
+    OPENSSL_VERSION: 1_1_1m
     OPENSSL_DIR: C:\OpenSSL
     CHANNEL: stable 
   RUST_BACKTRACE: full
@@ -19,12 +19,9 @@ install:
   - if defined OPENSSL_VERSION Win%BITS%OpenSSL-%OPENSSL_VERSION%.exe /SILENT /VERYSILENT /SP- /DIR="C:\OpenSSL"
   # install kafka
   - mkdir C:\kafka
-  - curl -sSf -o kafka.tgz https://downloads.apache.org/kafka/2.4.0/kafka_2.12-2.4.0.tgz
+  - curl -sSf -o kafka.tgz https://downloads.apache.org/kafka/3.0.0/kafka_2.12-3.0.0.tgz
   - tar -xvzf kafka.tgz -C C:\kafka
-  - ps: echo 'auto.create.topics.enable=true' >> C:\kafka\kafka_2.12-2.4.0\config\server.properties
-  # start kafka
-  - ps: $Zookeeper = Start-Process C:\kafka\kafka_2.12-2.4.0\bin\windows\zookeeper-server-start.bat C:\kafka\kafka_2.12-2.4.0\config\zookeeper.properties -passthru
-  - ps: $Kafka = Start-Process C:\kafka\kafka_2.12-2.4.0\bin\windows\kafka-server-start.bat C:\kafka\kafka_2.12-2.4.0\config\server.properties -passthru
+  - ps: echo 'auto.create.topics.enable=true' >> C:\kafka\kafka_2.12-3.0.0\config\server.properties
   # install Rust
   - curl -sSf -o rustup-init.exe https://win.rustup.rs/
   - rustup-init.exe -y --default-host %TARGET%
@@ -33,9 +30,12 @@ install:
   - cargo -vV
   - cargo install cargo-audit
 build: false
-test_script: 
+test_script:   
+  # start kafka
+  - ps: $Zookeeper = Start-Process C:\kafka\kafka_2.12-3.0.0\bin\windows\zookeeper-server-start.bat C:\kafka\kafka_2.12-3.0.0\config\zookeeper.properties -passthru
+  - ps: $Kafka = Start-Process C:\kafka\kafka_2.12-3.0.0\bin\windows\kafka-server-start.bat C:\kafka\kafka_2.12-3.0.0\config\server.properties -passthru
+  # perform testing
   - cargo test
-  - cargo audit
 on_finish:
   - ps: Stop-Process -Id $Zookeeper.Id  
   - ps: Stop-Process -Id $Kafka.Id  

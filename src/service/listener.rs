@@ -187,7 +187,25 @@ impl DaaSListenerService for DaaSListener {
 #[cfg(test)]
 mod test {
     use super::*;
+    use actix_web::http::StatusCode;
+    use actix_web::test::TestRequest;
     use std::time::Duration;
+
+    #[test]
+    fn test_health() {
+        let req = test::TestRequest::get().to_http_request();
+        let health = DaaSListener::health(req);
+
+        assert_eq!(health.status(), StatusCode::OK);
+    }
+
+    #[test]
+    fn test_health_path() {
+        assert_eq!(
+            DaaSListener::get_service_health_path(),
+            "/health".to_string()
+        );
+    }
     /*
         #[test]
         fn test_extract_auth_ok() {
@@ -232,5 +250,13 @@ mod test {
         });
 
         handle.join().unwrap();
+    }
+
+    #[test]
+    fn test_service_path() {
+        assert_eq!(
+            DaaSListener::get_service_path(),
+            "/{category}/{subcategory}/{source_name}/{source_uid}".to_string()
+        );
     }
 }

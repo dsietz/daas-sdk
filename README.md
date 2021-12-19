@@ -1,5 +1,6 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Coverage Status](https://coveralls.io/repos/github/dsietz/daas-sdk/badge.svg?branch=master)](https://coveralls.io/github/dsietz/daas-sdk?branch=master)
+[![Discussions](https://img.shields.io/github/discussions/dsietz/daas-sdk)](https://github.com/dsietz/daas-sdk/discussions)
 [![Docs.rs](https://docs.rs/daas/badge.svg)](https://docs.rs/daas)
 
 Linux: [![Build Status](https://github.com/dsietz/daas-sdk/actions/workflows/master.yaml/badge.svg)](https://github.com/dsietz/daas-sdk/actions/workflows/master.yaml)
@@ -26,11 +27,9 @@ For software development teams who implement the [Data as a Service (DaaS)](http
 
 ## What's New
 
-Here's whats new in 0.2.0:
+Here's whats new in 0.2.2:
 
-1. We've upgraded to more current versions of our crate's dependencies:
-   - actix-web = "3.0"
-2. Added the ability to configure the path of local storage used by the DaaSListener by setting the environment variable `DAAS_LOCAL_STORAGE`. If the environment variable is not set, it uses the system's default temporary path.
+1. We've cleaned up the code and improved our code coverage
 
 ## Features
 

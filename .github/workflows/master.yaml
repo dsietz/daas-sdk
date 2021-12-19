@@ -115,9 +115,10 @@ jobs:
           version: '0.15.0'
           out-type: 'Lcov'
           run-types: Tests
+          exclude-files: 'examples/* ffi/*'
           args: '-- --test-threads 1'  
       # - name: Gather coverage data
-      #   uses: docker://lpenz/ghaction-rust-coverage:0.2
+      #   uses: docker://lpenz/ghaction-rust-coverage:0.4
       - name: Coveralls upload
         uses: coverallsapp/github-action@master
         with:
@@ -135,4 +136,4 @@ jobs:
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true    
+          parallel-finished: true   
