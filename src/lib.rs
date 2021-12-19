@@ -23,9 +23,8 @@ pub const DELIMITER: &'static str = "~";
 
 #[macro_use]
 pub mod macros;
-pub mod errors;
-//pub mod config;
 pub mod doc;
+pub mod errors;
 pub mod eventing;
 pub mod service;
 pub mod storage;

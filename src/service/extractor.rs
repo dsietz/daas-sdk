@@ -72,3 +72,85 @@ impl AuthorExtractor for Base64Author {
 
 // Use macros to write the implmentation of the FromRequest trait
 author_from_request!(Base64Author);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::dev::Payload;
+    use actix_web::test;
+
+    #[test]
+    fn test_base64auth_new() {
+        let auth = Base64Author::new();
+        assert_eq!(auth.get_name(), "Anonymous".to_string());
+    }
+
+    #[test]
+    fn test_base64auth_display() {
+        let auth = Base64Author::new();
+        assert_eq!(
+            format!("{:?}", auth),
+            "Base64Author { name: \"Anonymous\" }"
+        );
+    }
+
+    #[test]
+    fn test_base64auth_set_name() {
+        match Base64Author::new().set_name("myname".to_string()) {
+            Ok(auth) => {
+                assert_eq!(auth.get_name(), "myname".to_string());
+            }
+            _ => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[actix_rt::test]
+    async fn test_base64auth_from_request_pass() {
+        let req = test::TestRequest::with_header("Authorization", "bXluYW1l").to_http_request();
+        let mut payload = Payload::None;
+        let expected = Base64Author::from_request(&req, &mut payload).await;
+        assert_eq!(expected.unwrap().get_name(), "myname".to_string());
+    }
+
+    #[actix_rt::test]
+    async fn test_base64auth_from_request_noencode() {
+        let req = test::TestRequest::with_header("Authorization", "myname").to_http_request();
+        let mut payload = Payload::None;
+        let expected = Base64Author::from_request(&req, &mut payload).await;
+        match expected {
+            Err(err) => match err {
+                MissingAuthorError => {
+                    assert!(true);
+                }
+                _ => {
+                    assert!(false);
+                }
+            },
+            Ok(_) => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[actix_rt::test]
+    async fn test_base64auth_from_request_missing() {
+        let req = test::TestRequest::get().to_http_request();
+        let mut payload = Payload::None;
+        let expected = Base64Author::from_request(&req, &mut payload).await;
+        match expected {
+            Err(err) => match err {
+                MissingAuthorError => {
+                    assert!(true);
+                }
+                _ => {
+                    assert!(false);
+                }
+            },
+            Ok(_) => {
+                assert!(false);
+            }
+        }
+    }
+}

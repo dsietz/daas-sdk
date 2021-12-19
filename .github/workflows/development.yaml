@@ -115,7 +115,7 @@ jobs:
           version: '0.15.0'
           out-type: 'Lcov'
           run-types: Tests
-          args: '-- --test-threads 1 --exclude-files examples/* ffi/* macros/*'  
+          args: '-- --test-threads 1 --exclude-files examples/* ffi/*'  
       # - name: Gather coverage data
       #   uses: docker://lpenz/ghaction-rust-coverage:0.4
       - name: Coveralls upload
