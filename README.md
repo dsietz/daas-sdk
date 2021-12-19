@@ -27,11 +27,9 @@ For software development teams who implement the [Data as a Service (DaaS)](http
 
 ## What's New
 
-Here's whats new in 0.2.0:
+Here's whats new in 0.2.2:
 
-1. We've upgraded to more current versions of our crate's dependencies:
-   - actix-web = "3.0"
-2. Added the ability to configure the path of local storage used by the DaaSListener by setting the environment variable `DAAS_LOCAL_STORAGE`. If the environment variable is not set, it uses the system's default temporary path.
+1. We've cleaned up the code and improved our code coverage
 
 ## Features
 
